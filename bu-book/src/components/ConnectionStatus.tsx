@@ -32,13 +32,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ className = '' }) =
           className={`status-dot ${getStatusClass()}`}
         />
         <span className="status-text">{getStatusText()}</span>
+        {lastFetch && (
+          <span className="last-update">
+            | {new Date(lastFetch).toLocaleTimeString()}
+          </span>
+        )}
       </div>
-      
-      {lastFetch && (
-        <div className="last-update">
-          Last update: {new Date(lastFetch).toLocaleTimeString()}
-        </div>
-      )}
       
       {error && (
         <div className="error-message" title={error}>

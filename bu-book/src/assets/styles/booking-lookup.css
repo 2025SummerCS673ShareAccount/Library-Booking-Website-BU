@@ -1,0 +1,287 @@
+/* Booking Lookup Modal Styles */
+.booking-lookup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.booking-lookup-modal {
+  background: #1e1e1e;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #ddd;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.booking-lookup-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #374151;
+  position: relative;
+}
+
+.booking-lookup-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #374151;
+  color: #fff;
+}
+
+/* Lookup Form */
+.lookup-form {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  background: #111827;
+  color: #fff;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group input::placeholder {
+  color: #6b7280;
+}
+
+.confirmation-input {
+  text-transform: uppercase !important;
+}
+
+.error-message {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  border-top: 1px solid #374151;
+  padding-top: 1.5rem;
+}
+
+.cancel-btn,
+.search-btn,
+.back-btn,
+.close-btn-alt {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn,
+.back-btn {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.cancel-btn:hover,
+.back-btn:hover {
+  background: #4b5563;
+}
+
+.search-btn,
+.close-btn-alt {
+  background: #2563eb;
+  color: white;
+}
+
+.search-btn:hover:not(:disabled),
+.close-btn-alt:hover {
+  background: #1d4ed8;
+}
+
+.search-btn:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Booking Details */
+.booking-details {
+  padding: 1.5rem;
+}
+
+.booking-info-section {
+  margin-bottom: 2rem;
+}
+
+.booking-info-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-item span {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.confirmation-code {
+  font-family: monospace;
+  font-weight: 600;
+  color: #60a5fa !important;
+  background: #1e3a8a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-confirmed {
+  background: #065f46;
+  color: #d1fae5;
+}
+
+.status-pending {
+  background: #92400e;
+  color: #fde68a;
+}
+
+.status-cancelled {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.status-unknown {
+  background: #374151;
+  color: #d1d5db;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .booking-lookup-modal {
+    margin: 0.5rem;
+    max-width: none;
+  }
+  
+  .booking-lookup-header,
+  .lookup-form,
+  .booking-details {
+    padding: 1rem;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .cancel-btn,
+  .search-btn,
+  .back-btn,
+  .close-btn-alt {
+    width: 100%;
+  }
+}
+
+/* Scrollbar Styling */
+.booking-lookup-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.booking-lookup-modal::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.booking-lookup-modal::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

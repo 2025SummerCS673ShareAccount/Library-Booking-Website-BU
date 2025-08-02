@@ -1,20 +1,26 @@
 /* Connection Status Component Styles */
 .connection-status {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.9);
+  flex-direction: column; /* Allow error message to be on separate line if needed */
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(30, 30, 30, 0.9); /* Dark background for dark theme */
+  border: 1px solid #333; /* Add border for better visibility */
   border-radius: 6px;
-  font-size: 12px;
-  color: #666;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 11px; /* Smaller base font size */
+  color: #ddd; /* Light text color for dark theme */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  min-width: 160px; /* Increase minimum width for horizontal content */
+  max-width: 250px; /* Increase max-width for horizontal layout */
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px; /* Increase gap slightly */
+  flex-shrink: 0; /* Prevent shrinking */
+  white-space: nowrap; /* Keep all content in one line */
 }
 
 .status-dot {
@@ -22,6 +28,7 @@
   height: 8px;
   border-radius: 50%;
   transition: background-color 0.3s ease;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .status-dot.connected {
@@ -38,16 +45,23 @@
 
 .status-text {
   font-weight: 500;
+  color: #e5e7eb; /* Lighter text for better visibility */
+  font-size: 11px;
+  white-space: nowrap; /* Prevent text wrapping */
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .last-update {
-  font-size: 11px;
-  color: #999;
+  font-size: 10px; /* Smaller font for last update */
+  color: #9ca3af; /* Lighter gray for dark theme */
+  white-space: nowrap; /* Prevent text wrapping */
+  flex-shrink: 1; /* Allow some shrinking if needed */
+  margin-left: 4px; /* Add small margin for separation */
 }
 
 .error-message {
-  font-size: 11px;
-  color: #ff4d4f;
+  font-size: 10px; /* Even smaller for errors */
+  color: #f87171; /* Lighter red for dark theme */
   max-width: 100px;
   white-space: nowrap;
   overflow: hidden;
