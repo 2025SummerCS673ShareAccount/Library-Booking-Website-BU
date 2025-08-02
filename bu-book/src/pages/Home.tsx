@@ -3,11 +3,15 @@ import '../assets/styles/home.css';
 import Map from '../components/Map'
 import ConnectionStatus from '../components/ConnectionStatus';
 import RoomAvailabilityList from '../components/RoomAvailabilityList';
+import NotificationContainer from '../components/NotificationContainer';
 import { useGlobalApi } from '../contexts/GlobalApiContext';
+import { useNotifications } from '../hooks/useNotifications';
 import type { TimeSelection } from '../types/booking';
+import { isPastTime } from '../utils/timeValidation';
 
 export default function Home() {
   const { buildings, isLoading, error } = useGlobalApi();
+  const { notifications, removeNotification, showPastTimeError } = useNotifications();
   const [timeSelection, setTimeSelection] = useState<TimeSelection | null>(null);
   
   // Time selection form states
@@ -46,6 +50,13 @@ export default function Home() {
     }
 
     const startTime = `${selectedHour}:${selectedMinute}`;
+    
+    // Check if the selected time is in the past
+    if (isPastTime(selectedDate, startTime)) {
+      showPastTimeError();
+      return;
+    }
+
     const selection: TimeSelection = {
       start_time: startTime,
       duration_minutes: duration,
@@ -203,6 +214,12 @@ export default function Home() {
           )}
         </section>
       </div>
+
+      {/* Notification Container */}
+      <NotificationContainer
+        notifications={notifications}
+        onRemoveNotification={removeNotification}
+      />
     </div>
   );
 }

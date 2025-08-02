@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { ModernBuilding } from '../lib/fetchBuildingsWithModernApi';
 import type { TimeSelection, RoomAvailabilityStatus } from '../types/booking';
 import '../assets/styles/room-availability-list.css';
@@ -23,8 +23,7 @@ interface RoomAvailabilityListProps {
 
 /**
  * Room Availability List Component
- * Displays rooms separated by availability status
- * Available rooms are shown first, then unavailable rooms
+ * Displays rooms grouped by building, with available and unavailable rooms in each building
  */
 export default function RoomAvailabilityList({ 
   buildings, 
@@ -33,34 +32,76 @@ export default function RoomAvailabilityList({
 }: RoomAvailabilityListProps) {
   const [selectedRoom, setSelectedRoom] = useState<ExtendedRoom | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
 
-  // Group rooms by availability
-  const availableRooms: ExtendedRoom[] = [];
-  const unavailableRooms: ExtendedRoom[] = [];
+  // Group rooms by building, then by availability
+  const buildingGroups = useMemo(() => {
+    const groups: { 
+      [buildingId: string]: { 
+        building: ModernBuilding; 
+        availableRooms: ExtendedRoom[]; 
+        unavailableRooms: ExtendedRoom[]; 
+      } 
+    } = {};
 
-  buildings.forEach(building => {
-    if (building.rooms) {
-      building.rooms.forEach((room) => {
-        const status = availabilityStatus?.find(s => s.room_id === parseInt(room.id));
-        const roomWithBuilding: ExtendedRoom = {
-          id: room.id,
-          name: room.name || room.room_name,
-          building_name: building.name,
-          building_short_name: building.short_name || building.name.substring(0, 3).toUpperCase(),
-          capacity: room.capacity,
-          room_type: room.room_type,
-          available: room.available,
-          availability_status: status
-        };
+    buildings.forEach(building => {
+      if (building.rooms && building.rooms.length > 0) {
+        const availableRooms: ExtendedRoom[] = [];
+        const unavailableRooms: ExtendedRoom[] = [];
 
-        if (status?.available !== false && room.available) {
-          availableRooms.push(roomWithBuilding);
-        } else {
-          unavailableRooms.push(roomWithBuilding);
+        building.rooms.forEach((room) => {
+          const status = availabilityStatus?.find(s => s.room_id === parseInt(room.id));
+          const roomWithBuilding: ExtendedRoom = {
+            id: room.id,
+            name: room.name || room.room_name,
+            building_name: building.name,
+            building_short_name: building.short_name || building.name.substring(0, 3).toUpperCase(),
+            capacity: room.capacity,
+            room_type: room.room_type,
+            available: room.available,
+            availability_status: status
+          };
+
+          if (status?.available !== false && room.available) {
+            availableRooms.push(roomWithBuilding);
+          } else {
+            unavailableRooms.push(roomWithBuilding);
+          }
+        });
+
+        // Only add building if it has rooms
+        if (availableRooms.length > 0 || unavailableRooms.length > 0) {
+          groups[building.id] = {
+            building,
+            availableRooms,
+            unavailableRooms
+          };
         }
-      });
+      }
+    });
+
+    return groups;
+  }, [buildings, availabilityStatus]);
+
+  // Default to expand all buildings on first load
+  useEffect(() => {
+    const buildingIds = Object.keys(buildingGroups);
+    if (buildingIds.length > 0 && expandedBuildings.size === 0) {
+      setExpandedBuildings(new Set(buildingIds));
     }
-  });
+  }, [buildingGroups, expandedBuildings.size]);
+
+  const toggleBuilding = (buildingId: string) => {
+    setExpandedBuildings(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(buildingId)) {
+        newSet.delete(buildingId);
+      } else {
+        newSet.add(buildingId);
+      }
+      return newSet;
+    });
+  };
 
   const handleSelectRoom = (room: ExtendedRoom) => {
     setSelectedRoom(room);
@@ -101,77 +142,110 @@ export default function RoomAvailabilityList({
         </div>
       </div>
 
-      {/* Available Rooms Section */}
-      {availableRooms.length > 0 && (
-        <div className="rooms-section available-section">
-          <h3 className="section-title">
-            <span className="status-indicator available"></span>
-            Available Rooms ({availableRooms.length})
-          </h3>
-          <div className="rooms-grid">
-            {availableRooms.map(room => (
-              <div key={room.id} className="room-card available">
-                <div className="room-header">
-                  <h4 className="room-name">{room.name}</h4>
-                  <span className="building-name">{room.building_name}</span>
-                </div>
-                <div className="room-details">
-                  <div className="room-info">
-                    <span className="capacity">Capacity: {room.capacity}</span>
-                    <span className="room-type">{room.room_type || 'Study Room'}</span>
-                  </div>
-                  <div className="room-status">
-                    <span className="status-badge available">Available</span>
-                  </div>
-                </div>
-                <button 
-                  className="select-btn available"
-                  onClick={() => handleSelectRoom(room)}
-                >
-                  Select Room
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Unavailable Rooms Section */}
-      {unavailableRooms.length > 0 && (
-        <div className="rooms-section unavailable-section">
-          <h3 className="section-title">
-            <span className="status-indicator unavailable"></span>
-            Unavailable Rooms ({unavailableRooms.length})
-          </h3>
-          <div className="rooms-grid">
-            {unavailableRooms.map(room => (
-              <div key={room.id} className="room-card unavailable">
-                <div className="room-header">
-                  <h4 className="room-name">{room.name}</h4>
-                  <span className="building-name">{room.building_name}</span>
-                </div>
-                <div className="room-details">
-                  <div className="room-info">
-                    <span className="capacity">Capacity: {room.capacity}</span>
-                    <span className="room-type">{room.room_type || 'Study Room'}</span>
-                  </div>
-                  <div className="room-status">
-                    <span className="status-badge unavailable">
-                      {room.availability_status?.status === 'conflict' ? 'Conflict' : 'Unavailable'}
+      {/* Buildings Section */}
+      {Object.keys(buildingGroups).length > 0 ? (
+        Object.values(buildingGroups).map(({ building, availableRooms, unavailableRooms }) => {
+          const isExpanded = expandedBuildings.has(building.id);
+          
+          return (
+            <div key={building.id} className="building-section">
+              <div className={`building-header ${isExpanded ? 'expanded' : ''}`} onClick={() => toggleBuilding(building.id)}>
+                <h3 className="building-title">
+                  <button className="toggle-btn">
+                    {isExpanded ? '▼' : '▶'}
+                  </button>
+                  {building.name}
+                  <span className="room-count">
+                    ({availableRooms.length + unavailableRooms.length} rooms)
+                  </span>
+                </h3>
+                <div className="building-stats">
+                  <span className="available-count">
+                    {availableRooms.length} available
+                  </span>
+                  {unavailableRooms.length > 0 && (
+                    <span className="unavailable-count">
+                      {unavailableRooms.length} unavailable
                     </span>
-                  </div>
-                </div>
-                <div className="unavailable-message">
-                  {room.availability_status && getStatusMessage(room.availability_status)}
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* No rooms found */}
-      {availableRooms.length === 0 && unavailableRooms.length === 0 && (
+              {/* Collapsible Content */}
+              {isExpanded && (
+                <div className="building-content">
+                  {/* Available Rooms in this Building */}
+            {availableRooms.length > 0 && (
+              <div className="rooms-subsection available-subsection">
+                <h4 className="subsection-title">
+                  <span className="status-indicator available"></span>
+                  Available ({availableRooms.length})
+                </h4>
+                <div className="rooms-grid">
+                  {availableRooms.map(room => (
+                    <div key={room.id} className="room-card available">
+                      <div className="room-header">
+                        <h5 className="room-name">{room.name}</h5>
+                      </div>
+                      <div className="room-details">
+                        <div className="room-info">
+                          <span className="capacity">Capacity: {room.capacity}</span>
+                          <span className="room-type">{room.room_type || 'Study Room'}</span>
+                        </div>
+                        <div className="room-status">
+                          <span className="status-badge available">Available</span>
+                        </div>
+                      </div>
+                      <button 
+                        className="select-btn available"
+                        onClick={() => handleSelectRoom(room)}
+                      >
+                        Select Room
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Unavailable Rooms in this Building */}
+            {unavailableRooms.length > 0 && (
+              <div className="rooms-subsection unavailable-subsection">
+                <h4 className="subsection-title">
+                  <span className="status-indicator unavailable"></span>
+                  Unavailable ({unavailableRooms.length})
+                </h4>
+                <div className="rooms-grid">
+                  {unavailableRooms.map(room => (
+                    <div key={room.id} className="room-card unavailable">
+                      <div className="room-header">
+                        <h5 className="room-name">{room.name}</h5>
+                      </div>
+                      <div className="room-details">
+                        <div className="room-info">
+                          <span className="capacity">Capacity: {room.capacity}</span>
+                          <span className="room-type">{room.room_type || 'Study Room'}</span>
+                        </div>
+                        <div className="room-status">
+                          <span className="status-badge unavailable">
+                            {room.availability_status?.status === 'conflict' ? 'Conflict' : 'Unavailable'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="unavailable-message">
+                        {room.availability_status && getStatusMessage(room.availability_status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
         <div className="no-rooms">
           <p>No rooms found for the selected time. Please try a different time slot.</p>
         </div>

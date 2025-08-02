@@ -34,7 +34,11 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ className = '' }) =
         <span className="status-text">{getStatusText()}</span>
         {lastFetch && (
           <span className="last-update">
-            | {new Date(lastFetch).toLocaleTimeString()}
+            | {new Date(lastFetch).toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            })}
           </span>
         )}
       </div>

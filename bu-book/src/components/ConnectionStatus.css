@@ -1,34 +1,30 @@
-/* Connection Status Component Styles */
+/* Connection Status Component - Clean and Simple */
 .connection-status {
-  display: flex;
-  flex-direction: column; /* Allow error message to be on separate line if needed */
-  align-items: flex-start;
-  gap: 4px;
-  padding: 6px 10px;
-  background: rgba(30, 30, 30, 0.9); /* Dark background for dark theme */
-  border: 1px solid #333; /* Add border for better visibility */
+  display: inline-block;
+  width: fit-content;
+  min-width: max-content;
+  padding: 8px 12px;
+  background: rgba(30, 30, 30, 0.9);
+  border: 1px solid #444;
   border-radius: 6px;
-  font-size: 11px; /* Smaller base font size */
-  color: #ddd; /* Light text color for dark theme */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  min-width: 160px; /* Increase minimum width for horizontal content */
-  max-width: 250px; /* Increase max-width for horizontal layout */
+  font-size: 11px;
+  color: #ddd;
+  white-space: nowrap;
 }
 
 .status-indicator {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px; /* Increase gap slightly */
-  flex-shrink: 0; /* Prevent shrinking */
-  white-space: nowrap; /* Keep all content in one line */
+  gap: 6px;
+  width: fit-content;
+  min-width: max-content;
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  transition: background-color 0.3s ease;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
 .status-dot.connected {
@@ -45,25 +41,20 @@
 
 .status-text {
   font-weight: 500;
-  color: #e5e7eb; /* Lighter text for better visibility */
-  font-size: 11px;
-  white-space: nowrap; /* Prevent text wrapping */
-  flex-shrink: 0; /* Prevent shrinking */
+  color: #e5e7eb;
+  flex: 1;
+  white-space: nowrap;
 }
 
 .last-update {
-  font-size: 10px; /* Smaller font for last update */
-  color: #9ca3af; /* Lighter gray for dark theme */
-  white-space: nowrap; /* Prevent text wrapping */
-  flex-shrink: 1; /* Allow some shrinking if needed */
-  margin-left: 4px; /* Add small margin for separation */
+  font-size: 10px;
+  color: #9ca3af;
+  margin-left: 4px;
 }
 
 .error-message {
-  font-size: 10px; /* Even smaller for errors */
-  color: #f87171; /* Lighter red for dark theme */
-  max-width: 100px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #f87171;
 }

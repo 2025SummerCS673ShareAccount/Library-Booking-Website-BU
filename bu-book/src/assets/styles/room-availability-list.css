@@ -6,6 +6,15 @@
   color: #fff;
 }
 
+/* Reset default h3 styles within this component */
+.room-availability-list h3 {
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
 .availability-header {
   display: flex;
   justify-content: space-between;
@@ -46,6 +55,138 @@
   margin-bottom: 2rem;
 }
 
+/* Building Section Styles */
+.building-section {
+  margin-bottom: 2.5rem;
+  background: #252525;
+  border-radius: 12px;
+  padding: 0; /* Remove padding, let header handle it */
+  border: 1px solid #374151;
+}
+
+.building-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0; /* Remove margin since it's at section level */
+  padding: 1rem;
+  border-bottom: 1px solid transparent; /* Default transparent border */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 12px 12px 0 0; /* Round only top corners */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.building-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.building-header.expanded {
+  border-bottom: 1px solid #374151;
+}
+
+/* When building is expanded, show bottom border */
+.building-section .building-content + * .building-header,
+.building-section:has(.building-content) .building-header {
+  border-bottom-color: #374151;
+  border-radius: 12px 12px 0 0;
+}
+
+.building-title {
+  color: #fff;
+  font-size: clamp(1.1rem, 2.5vw, 1.3rem); /* Responsive font size */
+  font-weight: 600;
+  margin: 0; /* This will now work thanks to the reset above */
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  line-height: 1.2; /* Clean line height */
+}
+
+.building-title .toggle-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: clamp(0.9rem, 2vw, 1rem); /* Responsive font size */
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  line-height: 1;
+  min-width: clamp(1.3rem, 3vw, 1.5rem); /* Responsive width */
+  text-align: center;
+}
+
+.building-title .toggle-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Building Content (Collapsible) */
+.building-content {
+  padding: 1.5rem;
+  animation: buildingExpand 0.4s ease-out forwards;
+  overflow: hidden;
+  transform-origin: top;
+}
+
+@keyframes buildingExpand {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    max-height: 2000px; /* Large enough value */
+  }
+}
+
+.room-count {
+  color: #9ca3af;
+  font-size: clamp(0.75rem, 1.8vw, 0.9rem); /* Responsive font size */
+  font-weight: 400;
+}
+
+.building-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.available-count {
+  color: #10b981;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem); /* Responsive font size */
+  font-weight: 500;
+}
+
+.unavailable-count {
+  color: #f87171;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem); /* Responsive font size */
+  font-weight: 500;
+}
+
+/* Room Subsections within Buildings */
+.rooms-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.rooms-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e5e7eb;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+}
+
 .section-title {
   display: flex;
   align-items: center;
@@ -75,8 +216,14 @@
 /* Room Grid */
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
+}
+
+/* Smaller grid for building subsections */
+.rooms-subsection .rooms-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
 }
 
 /* Room Cards */
@@ -101,8 +248,8 @@
 }
 
 .room-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .room-header {
@@ -111,7 +258,7 @@
 
 .room-name {
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
 }
@@ -262,6 +409,45 @@
     grid-template-columns: 1fr;
   }
 
+  .rooms-subsection .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .building-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem; /* Reduce padding on mobile */
+  }
+
+  .building-title {
+    font-size: 1.1rem; /* Smaller on mobile */
+    gap: 0.5rem; /* Reduce gap on mobile */
+  }
+
+  .building-title .toggle-btn {
+    font-size: 0.9rem; /* Smaller toggle button on mobile */
+    min-width: 1.3rem;
+  }
+
+  .room-count {
+    font-size: 0.8rem; /* Smaller room count on mobile */
+  }
+
+  .building-stats {
+    gap: 0.75rem;
+    font-size: 0.8rem; /* Ensure stats are readable on mobile */
+  }
+
+  .available-count,
+  .unavailable-count {
+    font-size: 0.8rem; /* Smaller stats on mobile */
+  }
+
+  .building-section {
+    padding: 1rem;
+  }
+
   .room-details {
     flex-direction: column;
     gap: 0.75rem;
@@ -270,24 +456,86 @@
 
 /* Animation */
 .room-card {
-  animation: fadeInUp 0.3s ease-out forwards;
+  animation: fadeIn 0.4s ease-out forwards;
+  opacity: 0; /* Start with opacity 0 */
 }
 
-@keyframes fadeInUp {
+/* Fade in animation for room cards */
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-/* Stagger animation for room cards */
-.room-card:nth-child(1) { animation-delay: 0.1s; }
-.room-card:nth-child(2) { animation-delay: 0.15s; }
-.room-card:nth-child(3) { animation-delay: 0.2s; }
-.room-card:nth-child(4) { animation-delay: 0.25s; }
-.room-card:nth-child(5) { animation-delay: 0.3s; }
-.room-card:nth-child(6) { animation-delay: 0.35s; }
+/* When building content is expanded, add cascade animation to room cards */
+.building-content .room-card {
+  animation: cascadeFadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes cascadeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Stagger animation for room cards within building content */
+.building-content .room-card:nth-child(1) { animation-delay: 0.2s; }
+.building-content .room-card:nth-child(2) { animation-delay: 0.25s; }
+.building-content .room-card:nth-child(3) { animation-delay: 0.3s; }
+.building-content .room-card:nth-child(4) { animation-delay: 0.35s; }
+.building-content .room-card:nth-child(5) { animation-delay: 0.4s; }
+.building-content .room-card:nth-child(6) { animation-delay: 0.45s; }
+.building-content .room-card:nth-child(7) { animation-delay: 0.5s; }
+.building-content .room-card:nth-child(8) { animation-delay: 0.55s; }
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 480px) {
+  .building-title {
+    font-size: 1rem;
+    gap: 0.4rem;
+  }
+
+  .building-title .toggle-btn {
+    font-size: 0.8rem;
+    min-width: 1.2rem;
+    padding: 0.2rem;
+  }
+
+  .room-count {
+    font-size: 0.75rem;
+  }
+
+  .available-count,
+  .unavailable-count {
+    font-size: 0.75rem;
+  }
+
+  .building-header {
+    padding: 0.5rem;
+  }
+}
+
+/* Large screens optimization */
+@media (min-width: 1200px) {
+  .building-title {
+    font-size: 1.4rem;
+  }
+
+  .room-count {
+    font-size: 1rem;
+  }
+
+  .available-count,
+  .unavailable-count {
+    font-size: 1rem;
+  }
+}
