@@ -1,11 +1,19 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../assets/styles/map.css';
 import { useGlobalApi } from '../contexts/GlobalApiContext';
+import type { ModernBuilding } from '../lib/fetchBuildingsWithModernApi';
 import MapSkeleton from './MapSkeleton';
 
-// Fix Leaflet default markers in React
+// Extend Window interface to include our navigation function
+declare global {
+    interface Window {
+        openNavigationModal?: (locationId: string) => void;
+    }
+}
+
+// Fix Leaflet default marker icons
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import markerRetina from 'leaflet/dist/images/marker-icon-2x.png';
@@ -49,12 +57,9 @@ export default function Map() {
 
     const { buildings } = useGlobalApi();
 
-    console.log('🏛️ Buildings data from GlobalApiContext:', buildings);
-
     // 检查数据是否准备就绪
     useEffect(() => {
         if (buildings && buildings.length > 0) {
-            console.log('📊 Buildings data is ready, preparing map...');
             // 首先加载地图基础层
             setMapDataReady(true);
             setIsMapLoading(false);
@@ -62,10 +67,8 @@ export default function Map() {
             // 然后延迟显示pin，创造更好的视觉效果
             setTimeout(() => {
                 setShowPins(true);
-                console.log('📍 Pins are now visible');
             }, 500);
         } else {
-            console.log('⏳ Waiting for buildings data...');
             setMapDataReady(false);
             setIsMapLoading(true);
             setShowPins(false);
@@ -73,18 +76,15 @@ export default function Map() {
     }, [buildings]);
 
     // 转换buildings数据为LocationData格式
-    const processBuildings = (buildings: any[]): LocationData[] => {
-        console.log('🔍 Processing buildings data:', buildings);
-
+    const processBuildings = (buildings: ModernBuilding[]): LocationData[] => {
         const buildingsWithCoords = buildings.filter(building => building.latitude && building.longitude);
-        console.log(`📊 Buildings with coordinates: ${buildingsWithCoords.length} out of ${buildings.length}`);
 
         const processedData = buildingsWithCoords.map(building => {
             const locationData = {
                 id: building.id?.toString() || building.short_name,
                 name: building.name,
-                lat: parseFloat(building.latitude),
-                lng: parseFloat(building.longitude),
+                lat: parseFloat(building.latitude?.toString() || '0'),
+                lng: parseFloat(building.longitude?.toString() || '0'),
                 address: building.address || '',
                 description: building.description || `${building.name} library`,
                 phone: building.phone || '',
@@ -93,16 +93,14 @@ export default function Map() {
                 type: 'library' as const
             };
 
-            console.log(`📍 ${building.name}: lat=${building.latitude}, lng=${building.longitude}`);
             return locationData;
         });
 
-        console.log('✅ Final processed location data:', processedData);
         return processedData;
     };
 
     // Boston University library locations - 仅作为备用
-    const libraryLocations: LocationData[] = [
+    const libraryLocations: LocationData[] = useMemo(() => [
         {
             id: 'mugar',
             name: 'Mugar Memorial Library',
@@ -151,7 +149,7 @@ export default function Map() {
             amenities: ['STEM Resources', 'Computer Lab', 'WiFi', '3D Printing'],
             type: 'library'
         }
-    ];
+    ], []);
 
     // Detect device type for navigation
     const detectDevice = () => {
@@ -238,14 +236,11 @@ export default function Map() {
     useEffect(() => {
         // 只有在数据准备就绪且容器存在时才初始化地图
         if (!mapContainerRef.current || !mapDataReady) {
-            console.log('⏸️ Map initialization paused - waiting for data or container');
             return;
         }
 
         // 避免重复初始化地图
         if (mapRef.current) {
-            console.log('🔄 Map already exists, updating pins visibility');
-
             // 清除现有标记
             mapRef.current.eachLayer((layer) => {
                 if (layer instanceof L.Marker) {
@@ -260,16 +255,11 @@ export default function Map() {
                     ? processBuildings(buildings)
                     : libraryLocations;
 
-                console.log('🗺️ Adding pins to existing map:', locationsToUse);
-                console.log(`📌 Total markers to be added: ${locationsToUse.length}`);
-
                 // 收集所有标记用于自动调整地图视图
                 const markers: L.Marker[] = [];
 
                 // 添加图书馆标记
-                locationsToUse.forEach((location: LocationData, index: number) => {
-                    console.log(`🏢 Adding marker ${index + 1}: ${location.name} at [${location.lat}, ${location.lng}]`);
-
+                locationsToUse.forEach((location: LocationData) => {
                     const marker = L.marker([location.lat, location.lng], {
                         icon: createLibraryIcon()
                     }).addTo(mapRef.current!);
@@ -305,7 +295,6 @@ export default function Map() {
                 if (buildings.length > 0 && markers.length > 0) {
                     const group = L.featureGroup(markers);
                     mapRef.current.fitBounds(group.getBounds().pad(0.1));
-                    console.log('🎯 Map view updated to show all database markers');
                 }
             }
 
@@ -314,7 +303,6 @@ export default function Map() {
 
         try {
             // 只在首次加载时创建地图
-            console.log('🆕 Creating new map instance');
             const map = L.map(mapContainerRef.current).setView(
                 [42.34751, -71.11508], // Boston University coordinates from OSM URL
                 15 // Zoom level
@@ -335,16 +323,11 @@ export default function Map() {
                     ? processBuildings(buildings)
                     : libraryLocations;
 
-                console.log('🗺️ Map will display locations:', locationsToUse);
-                console.log(`📌 Total markers to be added: ${locationsToUse.length}`);
-
                 // Collect all markers for auto-fitting the map view
                 const markers: L.Marker[] = [];
 
                 // Add library markers with custom popups
-                locationsToUse.forEach((location: LocationData, index: number) => {
-                    console.log(`🏢 Adding marker ${index + 1}: ${location.name} at [${location.lat}, ${location.lng}]`);
-
+                locationsToUse.forEach((location: LocationData) => {
                     const marker = L.marker([location.lat, location.lng], {
                         icon: createLibraryIcon()
                     }).addTo(map);
@@ -380,12 +363,11 @@ export default function Map() {
                 if (buildings.length > 0 && markers.length > 0) {
                     const group = L.featureGroup(markers);
                     map.fitBounds(group.getBounds().pad(0.1)); // Add 10% padding
-                    console.log('🎯 Map auto-fitted to show all database markers');
                 }
             }
 
             // Make navigation function globally available for popup buttons
-            (window as any).openNavigationModal = (locationId: string) => {
+            window.openNavigationModal = (locationId: string) => {
                 // Check both database and static locations
                 const processedBuildings = processBuildings(buildings);
                 let location = processedBuildings.find(loc => loc.id === locationId);
@@ -398,7 +380,6 @@ export default function Map() {
                 }
             };
 
-            console.log(`OpenStreetMap base layer loaded - Pins will appear when data is ready`);
             setHasError(false);
 
         } catch (error) {
@@ -410,14 +391,13 @@ export default function Map() {
         // Cleanup function
         return () => {
             if (mapRef.current) {
-                console.log('🧹 Cleaning up map instance');
                 mapRef.current.remove();
                 mapRef.current = null;
             }
             // Clean up global function
-            delete (window as any).openNavigationModal;
+            delete window.openNavigationModal;
         };
-    }, [buildings, mapDataReady, showPins]); // Re-run when buildings data changes, data becomes ready, or pin visibility changes
+    }, [buildings, mapDataReady, showPins, libraryLocations]); // Re-run when buildings data changes, data becomes ready, or pin visibility changes
 
     return (
         <div className="map-container">

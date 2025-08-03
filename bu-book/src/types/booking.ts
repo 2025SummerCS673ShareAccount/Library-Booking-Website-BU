@@ -4,7 +4,6 @@ export interface BookingRequest {
   user_email: string;
   user_phone?: string;
   user_name: string;
-  bu_id: string;
   booking_date: string;
   start_time: string;
   end_time: string;

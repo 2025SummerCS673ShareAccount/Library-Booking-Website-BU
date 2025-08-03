@@ -162,11 +162,7 @@
   font-weight: 500;
 }
 
-.unavailable-count {
-  color: #f87171;
-  font-size: clamp(0.8rem, 1.8vw, 0.9rem); /* Responsive font size */
-  font-weight: 500;
-}
+
 
 /* Room Subsections within Buildings */
 .rooms-subsection {
@@ -341,6 +337,22 @@
   transform: translateY(-1px);
 }
 
+.select-btn.unavailable {
+  background: #7f1d1d;
+  color: #fecaca;
+  cursor: not-allowed;
+  opacity: 0.8;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.select-btn.unavailable:hover {
+  background: #7f1d1d;
+  transform: none;
+}
+
 /* Unavailable Message */
 .unavailable-message {
   background: #7f1d1d;
@@ -393,6 +405,8 @@
 @media (max-width: 768px) {
   .room-availability-list {
     padding: 1rem;
+    min-height: 0; /* Allow natural height */
+    overflow: visible; /* Prevent clipping */
   }
 
   .availability-header {
@@ -407,10 +421,17 @@
 
   .rooms-grid {
     grid-template-columns: 1fr;
+    overflow: visible; /* Ensure content is not clipped */
+  }
+
+  .rooms-subsection {
+    margin-bottom: 1rem; /* Reduce spacing on mobile */
+    overflow: visible; /* Prevent clipping */
   }
 
   .rooms-subsection .rooms-grid {
     grid-template-columns: 1fr;
+    overflow: visible; /* Ensure room cards are visible */
   }
 
   .building-header {
@@ -439,18 +460,29 @@
     font-size: 0.8rem; /* Ensure stats are readable on mobile */
   }
 
-  .available-count,
-  .unavailable-count {
+  .available-count {
     font-size: 0.8rem; /* Smaller stats on mobile */
   }
 
   .building-section {
     padding: 1rem;
+    margin-bottom: 1rem; /* Add spacing between buildings */
+    overflow: visible; /* Ensure content is not clipped */
+  }
+
+  .building-content {
+    overflow: visible; /* Prevent clipping of subsections */
+    padding: 0; /* Remove extra padding */
   }
 
   .room-details {
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  .room-card {
+    margin-bottom: 0.5rem; /* Add spacing between cards */
+    overflow: visible; /* Ensure card content is visible */
   }
 }
 
@@ -499,6 +531,11 @@
 
 /* Extra small screens (phones in portrait) */
 @media (max-width: 480px) {
+  .room-availability-list {
+    padding: 0.75rem; /* Reduce padding further */
+    overflow: visible; /* Ensure content is visible */
+  }
+
   .building-title {
     font-size: 1rem;
     gap: 0.4rem;
@@ -514,13 +551,26 @@
     font-size: 0.75rem;
   }
 
-  .available-count,
-  .unavailable-count {
+  .available-count {
     font-size: 0.75rem;
   }
 
   .building-header {
     padding: 0.5rem;
+  }
+
+  .building-section {
+    padding: 0.75rem; /* Reduce padding */
+    margin-bottom: 0.75rem; /* Reduce spacing */
+  }
+
+  .rooms-subsection {
+    margin-bottom: 0.75rem; /* Reduce spacing */
+  }
+
+  .room-card {
+    padding: 1rem; /* Reduce card padding */
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -534,8 +584,7 @@
     font-size: 1rem;
   }
 
-  .available-count,
-  .unavailable-count {
+  .available-count {
     font-size: 1rem;
   }
 }

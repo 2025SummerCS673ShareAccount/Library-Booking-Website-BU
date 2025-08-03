@@ -14,12 +14,75 @@ export default function Home() {
   const { notifications, removeNotification, showPastTimeError } = useNotifications();
   const [timeSelection, setTimeSelection] = useState<TimeSelection | null>(null);
   
+  // Get current time for default values
+  const getCurrentTimeDefaults = () => {
+    const now = new Date();
+    let currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    let targetDate = now;
+    
+    // If current time is after 22:00 (10 PM), set to next day 08:00
+    if (currentHour >= 22) {
+      targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Add one day
+      currentHour = 8; // Set to 8 AM
+      const nextQuarter = '00';
+      const formattedHour = currentHour.toString().padStart(2, '0');
+      return { 
+        currentHour: formattedHour, 
+        nextQuarter, 
+        defaultDate: targetDate.toISOString().split('T')[0] 
+      };
+    }
+    
+    // If current time is before 08:00 (8 AM), set to 08:00 today
+    if (currentHour < 8) {
+      currentHour = 8;
+      const nextQuarter = '00';
+      const formattedHour = currentHour.toString().padStart(2, '0');
+      return { 
+        currentHour: formattedHour, 
+        nextQuarter,
+        defaultDate: targetDate.toISOString().split('T')[0]
+      };
+    }
+    
+    // Normal time logic (8 AM - 10 PM)
+    let nextQuarter;
+    if (currentMinute <= 15) {
+      nextQuarter = '15';
+    } else if (currentMinute <= 30) {
+      nextQuarter = '30';
+    } else if (currentMinute <= 45) {
+      nextQuarter = '45';
+    } else {
+      // If minutes are 46-59, move to next hour with 00 minutes
+      nextQuarter = '00';
+      currentHour = currentHour + 1;
+      
+      // If this pushes us past 22:00, move to next day 08:00
+      if (currentHour >= 22) {
+        targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        currentHour = 8;
+        nextQuarter = '00';
+      }
+    }
+    
+    const formattedHour = currentHour.toString().padStart(2, '0');
+    return { 
+      currentHour: formattedHour, 
+      nextQuarter,
+      defaultDate: targetDate.toISOString().split('T')[0]
+    };
+  };
+
+  const { currentHour, nextQuarter, defaultDate } = getCurrentTimeDefaults();
+  
   // Time selection form states
-  const [selectedHour, setSelectedHour] = useState<string>('');
-  const [selectedMinute, setSelectedMinute] = useState<string>('');
+  const [selectedHour, setSelectedHour] = useState<string>(currentHour);
+  const [selectedMinute, setSelectedMinute] = useState<string>(nextQuarter);
   const [duration, setDuration] = useState<number>(60);
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0] // Default to today's date
+    defaultDate || new Date().toISOString().split('T')[0] // Use calculated default date
   );
 
   // Generate hours from 8 AM to 10 PM (22:00)
@@ -44,7 +107,7 @@ export default function Home() {
   ];
 
   const handleSearch = () => {
-    if (!selectedHour || selectedMinute === '' || !selectedDate) {
+    if (!selectedHour || !selectedMinute || !selectedDate) {
       alert('Please select date, hour and minute');
       return;
     }
@@ -67,10 +130,11 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setSelectedHour('');
-    setSelectedMinute('');
+    const { currentHour, nextQuarter, defaultDate } = getCurrentTimeDefaults();
+    setSelectedHour(currentHour);
+    setSelectedMinute(nextQuarter);
     setDuration(60);
-    setSelectedDate(new Date().toISOString().split('T')[0]); // Reset to today
+    setSelectedDate(defaultDate || new Date().toISOString().split('T')[0]); // Use calculated default date
     setTimeSelection(null);
   };
 
@@ -128,38 +192,38 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="hour-select">Hour</label>
-                  <select
-                    id="hour-select"
-                    value={selectedHour}
-                    onChange={(e) => setSelectedHour(e.target.value)}
-                    className="time-select"
-                  >
-                    <option value="">Select Hour</option>
-                    {hours.map(hour => (
-                      <option key={hour} value={hour}>
-                        {hour}:00
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <div className="form-group time-group">
+                  <div className="time-field">
+                    <label htmlFor="hour-select">Hour</label>
+                    <select
+                      id="hour-select"
+                      value={selectedHour}
+                      onChange={(e) => setSelectedHour(e.target.value)}
+                      className="time-select"
+                    >
+                      {hours.map(hour => (
+                        <option key={hour} value={hour}>
+                          {hour}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="minute-select">Minute</label>
-                  <select
-                    id="minute-select"
-                    value={selectedMinute}
-                    onChange={(e) => setSelectedMinute(e.target.value)}
-                    className="time-select"
-                  >
-                    <option value="">Select Minute</option>
-                    {minutes.map(minute => (
-                      <option key={minute} value={minute}>
-                        :{minute}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="time-field">
+                    <label htmlFor="minute-select">Minute</label>
+                    <select
+                      id="minute-select"
+                      value={selectedMinute}
+                      onChange={(e) => setSelectedMinute(e.target.value)}
+                      className="time-select"
+                    >
+                      {minutes.map(minute => (
+                        <option key={minute} value={minute}>
+                          {minute}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -191,7 +255,7 @@ export default function Home() {
                   type="button" 
                   onClick={handleSearch}
                   className="search-btn"
-                  disabled={!selectedHour || selectedMinute === '' || !selectedDate}
+                  disabled={!selectedHour || !selectedMinute || !selectedDate}
                 >
                   Search Available Rooms
                 </button>

@@ -163,6 +163,19 @@
   gap: 0.5rem;
 }
 
+/* Time group for hour and minute selects */
+.booking-section .time-group {
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.booking-section .time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
 .booking-section .form-group label {
   color: #e5e7eb;
   font-size: 0.85rem;
@@ -556,19 +569,32 @@
 
 /* Responsive Design Updates */
 @media (max-width: 768px) {
+  .list-map-wrapper {
+    flex-direction: column; /* Stack vertically on mobile */
+    gap: 1rem;
+    min-height: 0; /* Allow natural height */
+    overflow: visible; /* Prevent clipping */
+  }
+
   .building-list-container {
-    flex: 1; /* Take full width on mobile */
+    flex: 0 0 auto; /* Take natural height */
     order: 2; /* Put controls after room list on mobile */
+    max-height: none; /* Remove height constraints */
+    overflow: visible; /* Prevent clipping */
   }
   
   .room-availability-area {
-    flex: 1; /* Take full width on mobile */
+    flex: 1; /* Take available space */
     order: 1; /* Put room list first on mobile */
+    min-height: 400px; /* Minimum usable height */
+    max-height: none; /* Remove max height constraint */
+    overflow-y: auto; /* Allow scrolling when needed */
   }
   
   .booking-section {
     flex: 0 0 auto; /* Don't grow on mobile */
     max-height: none; /* Remove height constraint */
+    overflow: visible; /* Prevent clipping */
   }
 }
 
@@ -710,5 +736,30 @@
   .modal-footer {
     padding-left: 16px;
     padding-right: 16px;
+  }
+}
+
+/* Extra small screens for room availability */
+@media (max-width: 480px) {
+  .home-container {
+    padding: 0.5rem; /* Reduce overall padding */
+    height: 100vh;
+    overflow: visible; /* Allow natural scrolling */
+  }
+
+  .list-map-wrapper {
+    gap: 0.75rem; /* Reduce gap */
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .room-availability-area {
+    min-height: 300px; /* Reduce minimum height */
+    padding: 0.75rem; /* Reduce padding */
+    overflow-y: auto;
+  }
+
+  .building-list-container {
+    overflow: visible;
   }
 }

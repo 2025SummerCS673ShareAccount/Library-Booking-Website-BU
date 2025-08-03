@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ModernBuilding } from '../lib/fetchBuildingsWithModernApi';
 import type { TimeSelection, RoomAvailabilityStatus } from '../types/booking';
+import { checkMultipleRoomConflicts } from '../lib/roomConflictChecker';
+import RoomBookingModal from './RoomBookingModal';
 import '../assets/styles/room-availability-list.css';
 
 interface ExtendedRoom {
@@ -33,8 +35,42 @@ export default function RoomAvailabilityList({
   const [selectedRoom, setSelectedRoom] = useState<ExtendedRoom | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+  const [conflictStatuses, setConflictStatuses] = useState<RoomAvailabilityStatus[]>([]);
 
-  // Group rooms by building, then by availability
+  // Refresh conflict statuses (can be called externally)
+  const refreshConflicts = useCallback(async () => {
+    if (!timeSelection.start_time || !timeSelection.end_time) {
+      return;
+    }
+    
+    // Collect all room IDs
+    const roomIds: number[] = [];
+    buildings.forEach(building => {
+      building.rooms?.forEach(room => {
+        const roomId = parseInt(room.id);
+        if (!isNaN(roomId)) {
+          roomIds.push(roomId);
+        }
+      });
+    });
+
+    if (roomIds.length > 0) {
+      try {
+        const conflicts = await checkMultipleRoomConflicts(roomIds, timeSelection);
+        setConflictStatuses(conflicts);
+      } catch (error) {
+        console.error('Failed to check room conflicts:', error);
+        setConflictStatuses([]);
+      }
+    }
+  }, [buildings, timeSelection]);
+
+  // Check for booking conflicts when time selection changes
+  useEffect(() => {
+    refreshConflicts();
+  }, [refreshConflicts]);
+
+  // Group rooms by building, then by availability (including conflict check)
   const buildingGroups = useMemo(() => {
     const groups: { 
       [buildingId: string]: { 
@@ -50,7 +86,17 @@ export default function RoomAvailabilityList({
         const unavailableRooms: ExtendedRoom[] = [];
 
         building.rooms.forEach((room) => {
-          const status = availabilityStatus?.find(s => s.room_id === parseInt(room.id));
+          const roomId = parseInt(room.id);
+          
+          // Check for conflicts first (takes priority)
+          const conflictStatus = conflictStatuses.find(s => s.room_id === roomId);
+          
+          // Then check original availability status
+          const originalStatus = availabilityStatus?.find(s => s.room_id === roomId);
+          
+          // Determine final status (conflict takes priority)
+          const finalStatus = conflictStatus || originalStatus;
+          
           const roomWithBuilding: ExtendedRoom = {
             id: room.id,
             name: room.name || room.room_name,
@@ -58,11 +104,12 @@ export default function RoomAvailabilityList({
             building_short_name: building.short_name || building.name.substring(0, 3).toUpperCase(),
             capacity: room.capacity,
             room_type: room.room_type,
-            available: room.available,
-            availability_status: status
+            available: room.available && (finalStatus?.available !== false),
+            availability_status: finalStatus
           };
 
-          if (status?.available !== false && room.available) {
+          // Room is available if: no conflicts AND originally available
+          if (finalStatus?.available !== false && room.available) {
             availableRooms.push(roomWithBuilding);
           } else {
             unavailableRooms.push(roomWithBuilding);
@@ -81,7 +128,7 @@ export default function RoomAvailabilityList({
     });
 
     return groups;
-  }, [buildings, availabilityStatus]);
+  }, [buildings, availabilityStatus, conflictStatuses]);
 
   // Default to expand all buildings on first load
   useEffect(() => {
@@ -117,7 +164,7 @@ export default function RoomAvailabilityList({
     switch (status.status) {
       case 'conflict':
         return status.conflict_details 
-          ? `Order Conflict. Someone booked this room from ${status.conflict_details.conflicting_booking.start_time} to ${status.conflict_details.conflicting_booking.end_time}`
+          ? `This room has been booked from ${status.conflict_details.conflicting_booking.start_time} - ${status.conflict_details.conflicting_booking.end_time}`
           : 'Room is already booked for this time';
       case 'closed':
         return 'Room is currently closed';
@@ -163,11 +210,6 @@ export default function RoomAvailabilityList({
                   <span className="available-count">
                     {availableRooms.length} available
                   </span>
-                  {unavailableRooms.length > 0 && (
-                    <span className="unavailable-count">
-                      {unavailableRooms.length} unavailable
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -228,7 +270,7 @@ export default function RoomAvailabilityList({
                         </div>
                         <div className="room-status">
                           <span className="status-badge unavailable">
-                            {room.availability_status?.status === 'conflict' ? 'Conflict' : 'Unavailable'}
+                            {room.availability_status?.status === 'conflict' ? 'Booked' : 'Unavailable'}
                           </span>
                         </div>
                       </div>
@@ -251,12 +293,23 @@ export default function RoomAvailabilityList({
         </div>
       )}
 
-      {/* Booking Modal - TODO: Implement RoomBookingModal */}
+      {/* Booking Modal */}
       {isBookingModalOpen && selectedRoom && (
-        <div className="booking-modal-placeholder">
-          <p>Booking modal for room: {selectedRoom.name}</p>
-          <button onClick={handleCloseModal}>Close</button>
-        </div>
+        <RoomBookingModal
+          room={selectedRoom}
+          timeSelection={{
+            start_time: timeSelection.start_time,
+            end_time: timeSelection.end_time,
+            duration_minutes: timeSelection.duration_minutes,
+            date: timeSelection.date || new Date().toISOString().split('T')[0]
+          }}
+          onClose={handleCloseModal}
+          onSuccess={() => {
+            handleCloseModal();
+            // Refresh conflict statuses after successful booking
+            refreshConflicts();
+          }}
+        />
       )}
     </div>
   );
