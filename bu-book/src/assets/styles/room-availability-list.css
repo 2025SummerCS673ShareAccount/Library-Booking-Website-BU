@@ -1,0 +1,590 @@
+/* Room Availability List Styles */
+.room-availability-list {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 2rem;
+  color: #fff;
+}
+
+/* Reset default h3 styles within this component */
+.room-availability-list h3 {
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.availability-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #374151;
+}
+
+.availability-header h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.time-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.time-range {
+  color: #60a5fa;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.duration {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* Sections */
+.rooms-section {
+  margin-bottom: 2rem;
+}
+
+/* Building Section Styles */
+.building-section {
+  margin-bottom: 2.5rem;
+  background: #252525;
+  border-radius: 12px;
+  padding: 0; /* Remove padding, let header handle it */
+  border: 1px solid #374151;
+}
+
+.building-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0; /* Remove margin since it's at section level */
+  padding: 1rem;
+  border-bottom: 1px solid transparent; /* Default transparent border */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 12px 12px 0 0; /* Round only top corners */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.building-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.building-header.expanded {
+  border-bottom: 1px solid #374151;
+}
+
+/* When building is expanded, show bottom border */
+.building-section .building-content + * .building-header,
+.building-section:has(.building-content) .building-header {
+  border-bottom-color: #374151;
+  border-radius: 12px 12px 0 0;
+}
+
+.building-title {
+  color: #fff;
+  font-size: clamp(1.1rem, 2.5vw, 1.3rem); /* Responsive font size */
+  font-weight: 600;
+  margin: 0; /* This will now work thanks to the reset above */
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  line-height: 1.2; /* Clean line height */
+}
+
+.building-title .toggle-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: clamp(0.9rem, 2vw, 1rem); /* Responsive font size */
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  line-height: 1;
+  min-width: clamp(1.3rem, 3vw, 1.5rem); /* Responsive width */
+  text-align: center;
+}
+
+.building-title .toggle-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Building Content (Collapsible) */
+.building-content {
+  padding: 1.5rem;
+  animation: buildingExpand 0.4s ease-out forwards;
+  overflow: hidden;
+  transform-origin: top;
+}
+
+@keyframes buildingExpand {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    max-height: 2000px; /* Large enough value */
+  }
+}
+
+.room-count {
+  color: #9ca3af;
+  font-size: clamp(0.75rem, 1.8vw, 0.9rem); /* Responsive font size */
+  font-weight: 400;
+}
+
+.building-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.available-count {
+  color: #10b981;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem); /* Responsive font size */
+  font-weight: 500;
+}
+
+
+
+/* Room Subsections within Buildings */
+.rooms-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.rooms-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e5e7eb;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-indicator.available {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.status-indicator.unavailable {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Room Grid */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Smaller grid for building subsections */
+.rooms-subsection .rooms-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Room Cards */
+.room-card {
+  background: #2d2d2d;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.room-card.available {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #064e3b 0%, #2d2d2d 100%);
+}
+
+.room-card.unavailable {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #7f1d1d 0%, #2d2d2d 100%);
+  opacity: 0.8;
+}
+
+.room-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.room-header {
+  margin-bottom: 1rem;
+}
+
+.room-name {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+.building-name {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.room-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.capacity {
+  color: #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.room-type {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.room-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.available {
+  background: #065f46;
+  color: #d1fae5;
+}
+
+.status-badge.unavailable {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+/* Select Button */
+.select-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.select-btn.available {
+  background: #10b981;
+  color: white;
+}
+
+.select-btn.available:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.select-btn.unavailable {
+  background: #7f1d1d;
+  color: #fecaca;
+  cursor: not-allowed;
+  opacity: 0.8;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.select-btn.unavailable:hover {
+  background: #7f1d1d;
+  transform: none;
+}
+
+/* Unavailable Message */
+.unavailable-message {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  border: 1px solid #991b1b;
+}
+
+/* No Rooms Message */
+.no-rooms {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+}
+
+.no-rooms p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Booking Modal Placeholder */
+.booking-modal-placeholder {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e1e;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 2rem;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.booking-modal-placeholder::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: -1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .room-availability-list {
+    padding: 1rem;
+    min-height: 0; /* Allow natural height */
+    overflow: visible; /* Prevent clipping */
+  }
+
+  .availability-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .time-info {
+    align-items: flex-start;
+  }
+
+  .rooms-grid {
+    grid-template-columns: 1fr;
+    overflow: visible; /* Ensure content is not clipped */
+  }
+
+  .rooms-subsection {
+    margin-bottom: 1rem; /* Reduce spacing on mobile */
+    overflow: visible; /* Prevent clipping */
+  }
+
+  .rooms-subsection .rooms-grid {
+    grid-template-columns: 1fr;
+    overflow: visible; /* Ensure room cards are visible */
+  }
+
+  .building-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem; /* Reduce padding on mobile */
+  }
+
+  .building-title {
+    font-size: 1.1rem; /* Smaller on mobile */
+    gap: 0.5rem; /* Reduce gap on mobile */
+  }
+
+  .building-title .toggle-btn {
+    font-size: 0.9rem; /* Smaller toggle button on mobile */
+    min-width: 1.3rem;
+  }
+
+  .room-count {
+    font-size: 0.8rem; /* Smaller room count on mobile */
+  }
+
+  .building-stats {
+    gap: 0.75rem;
+    font-size: 0.8rem; /* Ensure stats are readable on mobile */
+  }
+
+  .available-count {
+    font-size: 0.8rem; /* Smaller stats on mobile */
+  }
+
+  .building-section {
+    padding: 1rem;
+    margin-bottom: 1rem; /* Add spacing between buildings */
+    overflow: visible; /* Ensure content is not clipped */
+  }
+
+  .building-content {
+    overflow: visible; /* Prevent clipping of subsections */
+    padding: 0; /* Remove extra padding */
+  }
+
+  .room-details {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .room-card {
+    margin-bottom: 0.5rem; /* Add spacing between cards */
+    overflow: visible; /* Ensure card content is visible */
+  }
+}
+
+/* Animation */
+.room-card {
+  animation: fadeIn 0.4s ease-out forwards;
+  opacity: 0; /* Start with opacity 0 */
+}
+
+/* Fade in animation for room cards */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* When building content is expanded, add cascade animation to room cards */
+.building-content .room-card {
+  animation: cascadeFadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes cascadeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Stagger animation for room cards within building content */
+.building-content .room-card:nth-child(1) { animation-delay: 0.2s; }
+.building-content .room-card:nth-child(2) { animation-delay: 0.25s; }
+.building-content .room-card:nth-child(3) { animation-delay: 0.3s; }
+.building-content .room-card:nth-child(4) { animation-delay: 0.35s; }
+.building-content .room-card:nth-child(5) { animation-delay: 0.4s; }
+.building-content .room-card:nth-child(6) { animation-delay: 0.45s; }
+.building-content .room-card:nth-child(7) { animation-delay: 0.5s; }
+.building-content .room-card:nth-child(8) { animation-delay: 0.55s; }
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 480px) {
+  .room-availability-list {
+    padding: 0.75rem; /* Reduce padding further */
+    overflow: visible; /* Ensure content is visible */
+  }
+
+  .building-title {
+    font-size: 1rem;
+    gap: 0.4rem;
+  }
+
+  .building-title .toggle-btn {
+    font-size: 0.8rem;
+    min-width: 1.2rem;
+    padding: 0.2rem;
+  }
+
+  .room-count {
+    font-size: 0.75rem;
+  }
+
+  .available-count {
+    font-size: 0.75rem;
+  }
+
+  .building-header {
+    padding: 0.5rem;
+  }
+
+  .building-section {
+    padding: 0.75rem; /* Reduce padding */
+    margin-bottom: 0.75rem; /* Reduce spacing */
+  }
+
+  .rooms-subsection {
+    margin-bottom: 0.75rem; /* Reduce spacing */
+  }
+
+  .room-card {
+    padding: 1rem; /* Reduce card padding */
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Large screens optimization */
+@media (min-width: 1200px) {
+  .building-title {
+    font-size: 1.4rem;
+  }
+
+  .room-count {
+    font-size: 1rem;
+  }
+
+  .available-count {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,223 @@
+/* Time Selector Styles */
+.time-selector {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #374151;
+}
+
+.time-selection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.time-select,
+.duration-select {
+  padding: 0.75rem;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.time-select:focus,
+.duration-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.duration-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.duration-selection label {
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.time-preview {
+  background: #065f46;
+  border: 1px solid #047857;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.time-preview h3 {
+  color: #d1fae5;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.time-preview p {
+  color: #a7f3d0;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.time-preview strong {
+  color: #ecfdf5;
+}
+
+.time-selector-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.reset-btn,
+.search-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.reset-btn {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.reset-btn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.search-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.search-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.search-btn:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .time-selector {
+    padding: 1.5rem;
+  }
+  
+  .time-inputs {
+    grid-template-columns: 1fr;
+  }
+  
+  .time-selector-actions {
+    flex-direction: column;
+  }
+  
+  .reset-btn,
+  .search-btn {
+    width: 100%;
+  }
+}
+
+/* Compact mode for sidebar */
+.booking-section .time-selector {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #4b5563;
+}
+
+.booking-section .time-selector-header {
+  margin-bottom: 1rem;
+}
+
+.booking-section .time-selector-header h2 {
+  font-size: 1rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.booking-section .time-selector-header p {
+  font-size: 0.8rem;
+}
+
+.booking-section .time-selection-form {
+  gap: 1rem;
+}
+
+.booking-section .time-inputs {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.booking-section .form-group label {
+  font-size: 0.8rem;
+}
+
+.booking-section .time-select,
+.booking-section .duration-select {
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.booking-section .time-preview {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.booking-section .control-buttons {
+  gap: 0.5rem;
+}
+
+.booking-section .control-buttons button {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Animation for smooth transitions */
+.time-preview {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
