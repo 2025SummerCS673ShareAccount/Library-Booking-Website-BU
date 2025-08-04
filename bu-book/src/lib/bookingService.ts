@@ -15,7 +15,8 @@ const generateConfirmationCode = (): string => {
  * @returns A 6-digit numeric verification code
  */
 const generateVerificationCode = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Use cryptographically secure random number for 6-digit code
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 /**
