@@ -5,6 +5,8 @@
 # Database files and SQL scripts (contains sensitive data)
 /supabase/
 supabase/
+/SQLs/
+SQLs/
 
 # Environment Variables (Security - Never commit these!)
 .env

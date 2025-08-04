@@ -8,17 +8,46 @@
   <img src="https://img.shields.io/badge/Supabase-Database-orange" alt="Supabase">
 </div>
 
+## 🆕 Latest Updates (August 2024)
+
+### 📧 Email Verification System
+- **EmailJS Integration**: Secure email verification for all bookings
+- **Two-Step Process**: Email verification → Manual confirmation → Data refresh
+- **Free Tier**: 2000 emails/month with no credit card required
+- **Template System**: Customizable verification and confirmation emails
+
+### 🎯 Enhanced Booking Flow
+- **Smart Modal**: Three-step booking process (Details → Verification → Confirmation)
+- **User-Controlled Timing**: Manual confirmation prevents premature page refresh
+- **Real-time Validation**: Prevents double bookings with conflict detection
+- **Mobile Optimization**: Touch-friendly interface for all screen sizes
+
+### 🏢 UI/UX Improvements
+- **Cleaner Building Headers**: Removed clutter, showing only available room counts
+- **Responsive Layout**: Fixed mobile display issues and overflow problems
+- **Room Conflict Indicators**: Clear visual feedback for unavailable rooms
+- **Time Zone Support**: Eastern Time validation with past-time prevention
+
+### 🔧 Technical Enhancements
+- **Performance**: Optimized data refresh timing and state management
+- **Code Quality**: Removed debug logs, improved TypeScript implementation
+- **Error Handling**: Enhanced user feedback and graceful error recovery
+- **Accessibility**: Improved keyboard navigation and screen reader support
+
 ## 📚 Overview
 
 A comprehensive library room booking system for Boston University students and faculty. This platform provides real-time room availability, seamless booking management, and administrative tools for library staff.
 
 ### 🎯 Key Features
 
-- **Real-time Room Availability**: Live updates from LibCal API integration
+- **Real-time Room Availability**: Live updates with smart conflict detection
 - **Interactive Map Interface**: Visual room selection with Mapbox integration
+- **Email Verification System**: Secure booking confirmation via EmailJS
+- **Smart Booking Modal**: Step-by-step booking process with verification
+- **Responsive Design**: Mobile-optimized interface for all devices
+- **Room Conflict Detection**: Prevents double bookings with real-time validation
 - **Multi-language Support**: English and Chinese language options
 - **Admin Dashboard**: Comprehensive room and booking management
-- **Responsive Design**: Mobile-friendly interface for all devices
 - **Analytics & Statistics**: Usage tracking and reporting tools
 
 ## 🏗️ Project Structure
@@ -34,9 +63,10 @@ Library-Booking-Website-BU/
 ### 📦 Frontend Applications
 
 #### **bu-book** - Main Booking Interface
-- **Tech Stack**: React 18, TypeScript, Vite
-- **Features**: Room browsing, booking management, user interface
-- **UI Library**: Ant Design, Mapbox GL JS
+- **Tech Stack**: React 18, TypeScript, Vite, EmailJS
+- **Features**: Room browsing, smart booking modal, email verification, real-time conflict detection
+- **UI Library**: Ant Design, Mapbox GL JS, Custom CSS modules
+- **New Features**: Step-by-step booking process, email confirmation, responsive mobile UI
 - **Port**: 5173 (development)
 
 #### **admin-page** - Administrative Dashboard
@@ -102,10 +132,13 @@ The admin dashboard will be available at `http://localhost:5174`
 
 ### 👥 User Features
 
-- **Browse Rooms**: Visual map interface with real-time availability
-- **Search & Filter**: Find rooms by building, capacity, amenities
-- **Make Bookings**: Simple reservation process with confirmation
+- **Browse Rooms**: Visual map interface with real-time availability and conflict detection
+- **Smart Booking Process**: Three-step modal (Details → Email Verification → Confirmation)
+- **Email Verification**: Secure verification codes sent via EmailJS integration
+- **Search & Filter**: Find rooms by building, capacity, availability status
+- **Room Conflict Prevention**: Real-time validation prevents double bookings
 - **Manage Reservations**: View, modify, or cancel existing bookings
+- **Mobile-Optimized**: Responsive design with touch-friendly interactions
 - **Multi-language**: Switch between English and Chinese
 
 ### 🔧 Admin Features
@@ -118,11 +151,15 @@ The admin dashboard will be available at `http://localhost:5174`
 
 ### 📱 Technical Features
 
-- **Real-time Updates**: Live synchronization with LibCal API
-- **Responsive Design**: Optimized for desktop, tablet, and mobile
-- **Performance Optimized**: Lazy loading, code splitting, caching
-- **Error Handling**: Comprehensive error reporting and recovery
-- **Accessibility**: WCAG compliant interface design
+- **Real-time Updates**: Live synchronization with smart data refresh timing
+- **Email Integration**: EmailJS for verification and confirmation emails (2000 free emails/month)
+- **Room Conflict System**: Prevents overlapping bookings with verified status checking
+- **Responsive Design**: Mobile-first approach optimized for all screen sizes
+- **Performance Optimized**: Lazy loading, code splitting, efficient state management
+- **User-Controlled Refresh**: Manual confirmation modal closure prevents premature data refresh
+- **Error Handling**: Comprehensive error reporting and graceful fallbacks
+- **Accessibility**: WCAG compliant interface with keyboard navigation
+- **Time Validation**: Eastern Time zone support with past-time booking prevention
 
 ## 🛠️ Development
 
@@ -161,9 +198,35 @@ LIBCAL_API_KEY=your_libcal_key
 
 **bu-book/.env**
 ```env
-VITE_API_BASE_URL=http://localhost:5000
-VITE_MAPBOX_TOKEN=your_mapbox_token
+# Core Configuration
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_token
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_BACK_END_URL=your_backend_url
+VITE_DEBUG=true
+VITE_APP_NAME=BU Library Booking System
+VITE_APP_VERSION=1.0.0
+
+# EmailJS Configuration (Required for booking verification)
+VITE_EMAILJS_PUBLIC_KEY=your_emailjs_public_key
+VITE_EMAILJS_SERVICE_ID=your_emailjs_service_id
+VITE_EMAILJS_VERIFICATION_TEMPLATE_ID=verification_email
+VITE_EMAILJS_CONFIRMATION_TEMPLATE_ID=confirmation_email
 ```
+
+### 📧 Email Setup Guide
+
+For complete EmailJS setup instructions, see [EMAILJS_SETUP.md](EMAILJS_SETUP.md).
+
+**Quick Setup:**
+1. Create free EmailJS account (2000 emails/month)
+2. Connect your email service (Gmail, Outlook, etc.)
+3. Create verification and confirmation email templates
+4. Add your EmailJS credentials to `.env` file
+
+**Email Templates Required:**
+- `verification_email` - Sends verification codes to users
+- `confirmation_email` - Sends booking confirmation details
 
 ## 📁 Project Architecture
 
@@ -211,9 +274,17 @@ VITE_MAPBOX_TOKEN=your_mapbox_token
 - `POST /api/admin/v1/rooms` - Create new room (admin)
 - `PUT /api/admin/v1/rooms/{id}` - Update room (admin)
 
-#### Availability
-- `GET /api/availability` - Get real-time availability
-- `GET /api/availability/{room_id}` - Get room-specific availability
+#### Bookings
+- `GET /api/bookings` - List all bookings
+- `POST /api/bookings` - Create new booking with email verification
+- `PUT /api/bookings/{id}/verify` - Verify booking with email code
+- `GET /api/bookings/{id}/conflicts` - Check for room conflicts
+- `DELETE /api/bookings/{id}` - Cancel booking
+
+#### Email & Verification
+- `POST /api/send-verification` - Send verification email
+- `POST /api/verify-code` - Verify email confirmation code
+- `POST /api/resend-verification` - Resend verification email
 
 ### Response Format
 ```json
@@ -252,6 +323,25 @@ npm run type-check
 - Verify Supabase credentials in environment variables
 - Check database connection and table structure
 - Ensure proper row-level security policies
+- Run SQL migrations for verification fields
+
+**Email System Issues**
+```bash
+# Check EmailJS configuration
+console.log(import.meta.env.VITE_EMAILJS_PUBLIC_KEY)
+
+# Test email sending (check browser console for verification codes)
+# Look for "🔑 TEST VERIFICATION CODE: xxxxxx" in development mode
+
+# Verify EmailJS service status
+# Check EmailJS dashboard for delivery statistics
+```
+
+**Booking Verification Problems**
+- Ensure verification email templates are correctly configured
+- Check EmailJS template variable names match code expectations
+- Verify email service connection in EmailJS dashboard
+- Test with different email providers if delivery issues occur
 
 ## 📊 Performance Monitoring
 
