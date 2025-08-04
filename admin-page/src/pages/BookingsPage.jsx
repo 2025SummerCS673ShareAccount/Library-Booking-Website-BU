@@ -14,7 +14,10 @@ import {
   Row,
   Col,
   Statistic,
-  message
+  message,
+  Form,
+  DatePicker,
+  TimePicker
 } from 'antd';
 import {
   CalendarOutlined,
@@ -32,11 +35,11 @@ import bookingService from '../services/bookingService';
 import { useConnection } from '../contexts/ConnectionContext';
 import { useDataSource } from '../contexts/DataSourceContext';
 import { useGlobalApi } from '../contexts/GlobalApiContext';
-import { 
-  ConnectionStatus, 
-  TableSkeleton, 
+import {
+  ConnectionStatus,
+  TableSkeleton,
   DataUnavailablePlaceholder,
-  PageLoadingSkeleton 
+  PageLoadingSkeleton
 } from '../components/SkeletonComponents';
 import ServerStatusBanner from '../components/ServerStatusBanner';
 
@@ -56,10 +59,14 @@ const BookingsPage = () => {
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({});
   const [dataError, setDataError] = useState(null);
+
+  // Form instance for editing
+  const [editForm] = Form.useForm();
 
   // Table columns configuration (updated for new database schema)
   const columns = [
@@ -175,9 +182,8 @@ const BookingsPage = () => {
 
   // Manual refresh function for ServerStatusBanner
   const handleRefresh = async () => {
-    console.log('🔄 BookingsPage: Manual refresh triggered via ServerStatusBanner');
     await globalApi.refreshApi(); // This will refresh global data
-    
+
     // Also refresh local bookings data
     await loadBookings();
   };
@@ -187,20 +193,20 @@ const BookingsPage = () => {
     try {
       setLoading(true);
       setDataError(null);
-      
+
       // Prepare filters - don't filter by status in API call, do it locally
       const filters = {};
-      
+
       const response = await bookingService.getBookings({
         page: 1,
         limit: 100, // Get more records for local filtering
         filters: filters
       });
-      
+
       if (response.success) {
         setBookings(response.data?.bookings || []);
         setFilteredBookings(response.data?.bookings || []);
-        
+
         // Load statistics
         const statsResponse = await bookingService.getBookingStats();
         if (statsResponse.success) {
@@ -216,7 +222,7 @@ const BookingsPage = () => {
       setBookings([]);
       setFilteredBookings([]);
       setStats({});
-      
+
       // Only show error message if using real data
       if (useRealData) {
         message.error('Failed to load booking data');
@@ -229,12 +235,12 @@ const BookingsPage = () => {
   // Filter bookings based on search and status (updated for new schema)
   const filterBookings = () => {
     let filtered = bookings;
-    
+
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(booking => booking.status === statusFilter);
     }
-    
+
     // Search filter using new schema field names
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -248,7 +254,7 @@ const BookingsPage = () => {
         (booking.booking_reference || '').toLowerCase().includes(query)
       );
     }
-    
+
     setFilteredBookings(filtered);
   };
 
@@ -259,7 +265,55 @@ const BookingsPage = () => {
   };
 
   const editBooking = (booking) => {
-    message.info(`Edit booking ${booking.booking_reference || booking.id} - Feature coming soon`);
+    setSelectedBooking(booking);
+
+    // Populate form with current booking data
+    editForm.setFieldsValue({
+      user_name: booking.user_name,
+      user_email: booking.user_email, // Read-only field
+      booking_date: dayjs(booking.booking_date),
+      start_time: dayjs(booking.start_time, 'HH:mm'),
+      end_time: dayjs(booking.end_time, 'HH:mm'),
+      group_size: booking.group_size,
+      purpose: booking.purpose,
+      notes: booking.notes,
+      status: booking.status
+    });
+
+    setEditModalVisible(true);
+  };
+
+  const handleEditBooking = async (values) => {
+    try {
+      // Prepare update data - convert form values to proper format
+      const updateData = {
+        user_name: values.user_name,
+        booking_date: values.booking_date.format('YYYY-MM-DD'),
+        start_time: values.start_time.format('HH:mm'),
+        end_time: values.end_time.format('HH:mm'),
+        duration_minutes: values.end_time.diff(values.start_time, 'minutes'),
+        group_size: parseInt(values.group_size),
+        status: values.status,
+        purpose: values.purpose,
+        notes: values.notes
+      };
+
+      // Use the full updateBooking method for complete updates
+      const response = await bookingService.updateBooking(selectedBooking.id, updateData);
+
+      if (response.success) {
+        message.success('Booking updated successfully');
+        setEditModalVisible(false);
+        setSelectedBooking(null);
+        editForm.resetFields();
+        loadBookings(); // Reload data
+      } else {
+        message.error('Failed to update booking: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      message.error('Error updating booking');
+    }
   };
 
   const cancelBooking = async (booking) => {
@@ -271,14 +325,21 @@ const BookingsPage = () => {
       cancelText: 'No',
       onOk: async () => {
         try {
-          const response = await bookingService.cancelBooking(booking.id, 'Admin cancellation');
+          // Use updateBookingStatus to change status to 'cancelled'
+          const response = await bookingService.updateBookingStatus(
+            booking.id,
+            'cancelled',
+            'Admin cancellation'
+          );
+
           if (response.success) {
             message.success('Booking cancelled successfully');
             loadBookings(); // Reload data
           } else {
-            message.error('Failed to cancel booking');
+            message.error('Failed to cancel booking: ' + response.error);
           }
         } catch (error) {
+          console.error('Error cancelling booking:', error);
           message.error('Error cancelling booking');
         }
       }
@@ -307,7 +368,7 @@ const BookingsPage = () => {
       </Paragraph>
 
       {/* Server Status Banner */}
-      <ServerStatusBanner 
+      <ServerStatusBanner
         useGlobalApi={true}
         onRefresh={handleRefresh}
         showConnectionStatus={true}
@@ -322,7 +383,7 @@ const BookingsPage = () => {
 
       {/* Error State */}
       {dataError && !loading && (
-        <DataUnavailablePlaceholder 
+        <DataUnavailablePlaceholder
           title="Booking Data Unavailable"
           description={`Error loading booking data: ${dataError}. Please try refreshing the page.`}
           onRetry={loadBookings}
@@ -401,8 +462,8 @@ const BookingsPage = () => {
                 />
               </Col>
               <Col xs={24} sm={6}>
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   icon={<ReloadOutlined />}
                   onClick={loadBookings}
                   loading={loading}
@@ -415,7 +476,7 @@ const BookingsPage = () => {
           </Card>
 
           {/* Bookings Table */}
-          <Card 
+          <Card
             title={`Bookings (${filteredBookings.length} found)`}
             extra={
               <Tag color="blue">
@@ -434,7 +495,7 @@ const BookingsPage = () => {
                   pageSize: 15,
                   showSizeChanger: true,
                   showQuickJumper: true,
-                  showTotal: (total, range) => 
+                  showTotal: (total, range) =>
                     `${range[0]}-${range[1]} of ${total} bookings`
                 }}
                 scroll={{ x: 1000 }}
@@ -481,8 +542,8 @@ const BookingsPage = () => {
                 <Descriptions.Item label="Status">
                   <Tag color={
                     selectedBooking.status === 'confirmed' ? 'success' :
-                    selectedBooking.status === 'cancelled' ? 'error' :
-                    selectedBooking.status === 'completed' ? 'default' : 'warning'
+                      selectedBooking.status === 'cancelled' ? 'error' :
+                        selectedBooking.status === 'completed' ? 'default' : 'warning'
                   }>
                     {selectedBooking.status}
                   </Tag>
@@ -506,6 +567,169 @@ const BookingsPage = () => {
                 )}
               </Descriptions>
             )}
+          </Modal>
+
+          {/* Edit Booking Modal */}
+          <Modal
+            title={`Edit Booking - ${selectedBooking?.booking_reference || selectedBooking?.id}`}
+            open={editModalVisible}
+            onCancel={() => {
+              setEditModalVisible(false);
+              setSelectedBooking(null);
+              editForm.resetFields();
+            }}
+            footer={null}
+            width={600}
+          >
+            <Form
+              form={editForm}
+              layout="vertical"
+              onFinish={handleEditBooking}
+            >
+              {/* User Information */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="user_name"
+                    label="User Name"
+                    rules={[{ required: true, message: 'Please enter user name' }]}
+                  >
+                    <Input placeholder="Enter user name" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="user_email"
+                    label="User Email (Read-only)"
+                  >
+                    <Input disabled />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Booking Date and Status */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="booking_date"
+                    label="Booking Date"
+                    rules={[{ required: true, message: 'Please select booking date' }]}
+                  >
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      format="YYYY-MM-DD"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="status"
+                    label="Status"
+                    rules={[{ required: true, message: 'Please select status' }]}
+                  >
+                    <Select>
+                      <Select.Option value="confirmed">Confirmed</Select.Option>
+                      <Select.Option value="pending">Pending</Select.Option>
+                      <Select.Option value="cancelled">Cancelled</Select.Option>
+                      <Select.Option value="completed">Completed</Select.Option>
+                      <Select.Option value="no-show">No Show</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Time and Group Size */}
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item
+                    name="start_time"
+                    label="Start Time"
+                    rules={[{ required: true, message: 'Please select start time' }]}
+                  >
+                    <TimePicker
+                      format="HH:mm"
+                      style={{ width: '100%' }}
+                      minuteStep={30}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="end_time"
+                    label="End Time"
+                    rules={[{ required: true, message: 'Please select end time' }]}
+                  >
+                    <TimePicker
+                      format="HH:mm"
+                      style={{ width: '100%' }}
+                      minuteStep={30}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="group_size"
+                    label="Group Size"
+                    rules={[
+                      { required: true, message: 'Please enter group size' },
+                      { type: 'number', min: 1, max: 20, message: 'Group size must be between 1 and 20' }
+                    ]}
+                  >
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      placeholder="Number of people"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Purpose and Notes */}
+              <Form.Item
+                name="purpose"
+                label="Purpose"
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Purpose of the booking..."
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="notes"
+                label="Admin Notes"
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Add admin notes..."
+                />
+              </Form.Item>
+
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <Space>
+                  <Button
+                    onClick={() => {
+                      setEditModalVisible(false);
+                      setSelectedBooking(null);
+                      editForm.resetFields();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="primary" htmlType="submit">
+                    Update Booking
+                  </Button>
+                </Space>
+              </div>
+
+              <div style={{ marginTop: 16, padding: 16, backgroundColor: '#f0f7ff', borderRadius: 6, border: '1px solid #d6e4ff' }}>
+                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                  <strong>Admin Privileges:</strong> You can modify all booking details except the user's email address.
+                  Changes will be saved to the database and users will be notified if necessary.
+                </Typography.Text>
+              </div>
+            </Form>
           </Modal>
         </>
       )}

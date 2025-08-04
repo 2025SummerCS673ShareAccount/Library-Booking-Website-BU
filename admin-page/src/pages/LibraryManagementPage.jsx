@@ -16,7 +16,9 @@ import {
   Alert,
   Spin,
   Progress,
-  Tooltip
+  Tooltip,
+  Switch,
+  InputNumber
 } from 'antd';
 import {
   PlusOutlined,
@@ -84,6 +86,7 @@ const LibraryManagementPage = () => {
   // Load buildings from global cache
   useEffect(() => {
     const cachedBuildings = globalApi.getCachedData('buildings');
+
     if (cachedBuildings && Array.isArray(cachedBuildings)) {
       setBuildings(cachedBuildings);
     } else {
@@ -94,6 +97,7 @@ const LibraryManagementPage = () => {
   // Load rooms for selected building with unified loading pattern
   const loadRooms = async (buildingId) => {
     if (!buildingId) {
+      setRooms([]);
       return;
     }
 
@@ -101,21 +105,61 @@ const LibraryManagementPage = () => {
       setLoading(true);
       setDataError(null);
 
-      // Use global rooms data and filter by building ID
-      const { globalData } = globalApi;
-      if (globalData?.rooms && globalData.rooms.length > 0) {
-        const buildingRooms = globalData.rooms.filter(room =>
-          room.building_id === buildingId ||
-          room.building_id === String(buildingId)
-        );
+      // Get fresh data from GlobalAPI
+      const globalRooms = globalApi.getCachedData('rooms');
+
+      if (globalRooms && globalRooms.length > 0) {
+        // Filter rooms by building ID (handle both string and number comparison)
+        const buildingRooms = globalRooms.filter(room => {
+          const roomBuildingId = room.building_id;
+          const targetBuildingId = buildingId;
+
+          // Convert both to strings and numbers for comparison
+          const stringMatch = String(roomBuildingId) === String(targetBuildingId);
+          const numberMatch = Number(roomBuildingId) === Number(targetBuildingId);
+          const exactMatch = roomBuildingId === targetBuildingId;
+
+          return stringMatch || numberMatch || exactMatch;
+        });
 
         setRooms(buildingRooms);
-        message.success(`Loaded ${buildingRooms.length} rooms for building`);
+
+        if (buildingRooms.length > 0) {
+          message.success(`Loaded ${buildingRooms.length} rooms for building`);
+        } else {
+          message.info(`No rooms found for this building`);
+        }
       } else {
-        setRooms([]);
-        message.warning('No rooms data available. Try refreshing the page.');
+        // No global room data available, try to refresh
+        await globalApi.refreshApi();
+        const refreshedRooms = globalApi.getCachedData('rooms');
+
+        if (refreshedRooms && refreshedRooms.length > 0) {
+          const buildingRooms = refreshedRooms.filter(room => {
+            const roomBuildingId = room.building_id;
+            const targetBuildingId = buildingId;
+
+            const stringMatch = String(roomBuildingId) === String(targetBuildingId);
+            const numberMatch = Number(roomBuildingId) === Number(targetBuildingId);
+            const exactMatch = roomBuildingId === targetBuildingId;
+
+            return stringMatch || numberMatch || exactMatch;
+          });
+
+          setRooms(buildingRooms);
+
+          if (buildingRooms.length > 0) {
+            message.success(`Loaded ${buildingRooms.length} rooms for building`);
+          } else {
+            message.info(`No rooms found for this building`);
+          }
+        } else {
+          setRooms([]);
+          message.warning('No room data available. The building may not have any rooms configured.');
+        }
       }
     } catch (error) {
+      console.error('Error loading rooms:', error);
       setDataError(error.message);
       message.error('Failed to load rooms data');
       setRooms([]);
@@ -332,38 +376,46 @@ const LibraryManagementPage = () => {
   const roomColumns = [
     {
       title: 'Room Name',
-      dataIndex: 'room_name',
-      key: 'room_name',
-      render: (text) => <strong>{text}</strong>,
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <strong>{text || 'N/A'}</strong>,
     },
     {
-      title: 'Room Number',
-      dataIndex: 'room_number',
-      key: 'room_number',
+      title: 'Room Type',
+      dataIndex: 'room_type',
+      key: 'room_type',
+      render: (type) => type ? <Tag color="geekblue">{type}</Tag> : 'N/A',
     },
     {
       title: 'Capacity',
       dataIndex: 'capacity',
       key: 'capacity',
-      render: (capacity) => <Tag color="blue">{capacity} people</Tag>,
+      render: (capacity) => capacity ? <Tag color="blue">{capacity} people</Tag> : 'N/A',
     },
     {
-      title: 'Equipment',
-      dataIndex: 'equipment',
-      key: 'equipment',
-      render: (equipment) => {
-        if (!equipment) return <span style={{ color: '#ccc' }}>None</span>;
-        // Handle equipment as array or JSON string
-        const equipmentArray = Array.isArray(equipment) ? equipment :
-          typeof equipment === 'string' ? JSON.parse(equipment) : [];
+      title: 'Building',
+      key: 'building',
+      render: (_, record) => {
+        // Try to get building name from the room data or from the selected building
+        const buildingName = record.building_name || selectedBuilding?.name || 'Unknown';
+        const buildingCode = record.building_code || selectedBuilding?.short_name || '';
         return (
-          <Space wrap>
-            {equipmentArray.map((item, index) => (
-              <Tag key={index} color="purple">{item}</Tag>
-            ))}
-          </Space>
+          <div>
+            <div>{buildingName}</div>
+            {buildingCode && (
+              <div style={{ color: '#666', fontSize: '12px' }}>
+                ({buildingCode})
+              </div>
+            )}
+          </div>
         );
       },
+    },
+    {
+      title: 'External ID',
+      dataIndex: 'eid',
+      key: 'eid',
+      render: (eid) => eid ? <code style={{ fontSize: '11px' }}>{eid}</code> : 'N/A',
     },
     {
       title: 'Status',
@@ -371,7 +423,7 @@ const LibraryManagementPage = () => {
       key: 'available',
       render: (available) => (
         <Tag color={available ? 'green' : 'red'}>
-          {available ? 'Active' : 'Inactive'}
+          {available ? 'Available' : 'Unavailable'}
         </Tag>
       ),
     },
@@ -405,48 +457,29 @@ const LibraryManagementPage = () => {
   const handleGeocode = async (building) => {
     const address = building.address || building.location;
 
-    console.log('🎯 [UI] Geocode button clicked:', {
-      building: {
-        id: building.id,
-        name: building.name,
-        address: address
-      },
-      timestamp: new Date().toISOString()
-    });
-
     if (!address) {
-      console.warn('⚠️ [UI] No address available for geocoding');
       message.warning('No address available for geocoding');
       return;
     }
 
     setGeocodingLoading(true);
     try {
-      console.log('🚀 [UI] Starting geocoding process...');
       const result = await geocodeAndUpdateBuilding(building.id, address);
-
-      console.log('🎉 [UI] Geocoding process completed:', result);
 
       if (result.success) {
         message.success(`Successfully geocoded ${building.name}`);
-        console.log('✅ [UI] Success message shown, starting refresh...');
 
         // Wait a moment for database update to complete
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Refresh the buildings list to show updated geocoding status
-        console.log('🔄 [UI] Refreshing data...');
         await handleRefresh();
-        console.log('✅ [UI] Data refresh completed');
       } else {
-        console.error('❌ [UI] Geocoding failed:', result.error);
         message.error(`Failed to geocode ${building.name}: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('💥 [UI] Geocoding exception:', error);
       message.error(`Error geocoding ${building.name}: ${error.message}`);
     } finally {
-      console.log('🏁 [UI] Geocoding process finished, clearing loading state');
       setGeocodingLoading(false);
     }
   };
@@ -462,7 +495,6 @@ const LibraryManagementPage = () => {
       }
 
       setModalGeocodingLoading(true);
-      console.log('🎯 [MODAL] Starting OpenStreetMap geocoding for address:', addressValue);
 
       // Import geocoding service directly for coordinate fetching
       const { geocodeAddress } = await import('../services/geocodingService');
@@ -496,21 +528,11 @@ const LibraryManagementPage = () => {
           `📍 Coordinates found: ${result.lat}, ${result.lng}${locationInfo}`,
           4 // Show for 4 seconds
         );
-
-        console.log('✅ [MODAL] OpenStreetMap geocoding successful:', {
-          coordinates: { lat: result.lat, lng: result.lng },
-          display_name: result.display_name,
-          is_campus_location: result.is_campus_location,
-          confidence: result.confidence,
-          accuracy: accuracy
-        });
       } else {
         message.error(`🔍 Geocoding failed: Unable to find coordinates for this address using OpenStreetMap`);
-        console.error('❌ [MODAL] OpenStreetMap geocoding failed:', result);
       }
     } catch (error) {
       message.error(`🌐 OpenStreetMap geocoding error: ${error.message}`);
-      console.error('💥 [MODAL] OpenStreetMap geocoding exception:', error);
     } finally {
       setModalGeocodingLoading(false);
     }
@@ -520,7 +542,7 @@ const LibraryManagementPage = () => {
     setEditingItem(item);
     setModalVisible(true);
 
-    // Handle nested contacts field for buildings
+    // Handle different data structures for buildings vs rooms
     if (type === 'building' && item.contacts) {
       const formData = {
         ...item,
@@ -534,9 +556,27 @@ const LibraryManagementPage = () => {
         geocoded_at: item.geocoded_at
       };
       form.setFieldsValue(formData);
+    } else if (type === 'room') {
+      // For rooms, ensure all required fields are set with proper defaults
+      const roomData = {
+        name: item.name || '',
+        room_type: item.room_type || '',
+        capacity: item.capacity || '',
+        eid: item.eid || '',
+        building_id: item.building_id || selectedBuilding?.id || '',
+        available: item.available !== false, // Default to true unless explicitly false
+      };
+      form.setFieldsValue(roomData);
     } else {
       form.setFieldsValue(item);
     }
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setEditingItem(null);
+    form.resetFields();
   };
 
   // Handle add new action
@@ -749,7 +789,7 @@ const LibraryManagementPage = () => {
         title={`${editingItem ? 'Edit' : 'Add'} ${modalType === 'building' ? 'Building' : 'Room'}`}
         open={modalVisible}
         onOk={handleModalSubmit}
-        onCancel={() => setModalVisible(false)}
+        onCancel={handleModalClose}
         width={800}
         destroyOnHidden={true}
         okText="Confirm Changes"
@@ -759,6 +799,7 @@ const LibraryManagementPage = () => {
           form={form}
           layout="vertical"
           name={`${modalType}_form`}
+          preserve={false}
         >
           {modalType === 'building' ? (
             <>
@@ -912,31 +953,68 @@ const LibraryManagementPage = () => {
                 name="name"
                 rules={[{ required: true, message: 'Please enter room name' }]}
               >
-                <Input placeholder="Enter room name" />
+                <Input placeholder="e.g., Room 101, Conference A" />
               </Form.Item>
               <Form.Item
-                label="Room Number"
-                name="roomNumber"
-                rules={[{ required: true, message: 'Please enter room number' }]}
+                label="Room Type"
+                name="room_type"
+                rules={[{ required: true, message: 'Please select room type' }]}
               >
-                <Input placeholder="Enter room number" />
+                <Select placeholder="Select room type">
+                  <Option value="classroom">Classroom</Option>
+                  <Option value="conference">Conference Room</Option>
+                  <Option value="study">Study Room</Option>
+                  <Option value="computer_lab">Computer Lab</Option>
+                  <Option value="meeting">Meeting Room</Option>
+                  <Option value="lecture_hall">Lecture Hall</Option>
+                  <Option value="seminar">Seminar Room</Option>
+                  <Option value="other">Other</Option>
+                </Select>
               </Form.Item>
               <Form.Item
                 label="Capacity"
                 name="capacity"
-                rules={[{ required: true, message: 'Please enter room capacity' }]}
+                rules={[
+                  { required: true, message: 'Please enter capacity' },
+                  { type: 'number', min: 1, max: 500, message: 'Capacity must be between 1 and 500' }
+                ]}
               >
-                <Input type="number" placeholder="Enter room capacity" />
+                <InputNumber
+                  placeholder="Number of people"
+                  style={{ width: '100%' }}
+                  min={1}
+                  max={500}
+                />
               </Form.Item>
               <Form.Item
-                label="Status"
-                name="available"
-                rules={[{ required: true, message: 'Please select room status' }]}
+                label="External ID (Optional)"
+                name="eid"
+                extra="External system reference ID"
               >
-                <Select placeholder="Select room status">
-                  <Option value={true}>Available</Option>
-                  <Option value={false}>Unavailable</Option>
+                <Input placeholder="e.g., EXT-001, SIS-123" />
+              </Form.Item>
+              <Form.Item
+                label="Building"
+                name="building_id"
+                rules={[{ required: true, message: 'Please select a building' }]}
+              >
+                <Select placeholder="Select building" disabled={!!selectedBuilding}>
+                  {buildings.map(building => (
+                    <Option key={building.id} value={building.id}>
+                      {building.name} ({building.short_name})
+                    </Option>
+                  ))}
                 </Select>
+              </Form.Item>
+              <Form.Item
+                label="Room Status"
+                name="available"
+                valuePropName="checked"
+              >
+                <Switch
+                  checkedChildren="Available"
+                  unCheckedChildren="Unavailable"
+                />
               </Form.Item>
             </>
           )}

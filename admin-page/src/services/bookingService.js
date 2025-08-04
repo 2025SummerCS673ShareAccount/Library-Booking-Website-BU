@@ -79,11 +79,11 @@ const mockBookings = [
  */
 export const getBookings = async (options = {}) => {
   const { page = 1, limit = 10, filters = {} } = options;
-  
+
   try {
     // Try to get data from Supabase first
     const result = await supabaseService.getBookings(page, limit, filters);
-    
+
     if (result.success) {
       return result;
     } else {
@@ -92,43 +92,43 @@ export const getBookings = async (options = {}) => {
   } catch (error) {
     console.warn('Supabase service unavailable, using mock data:', error.message);
   }
-  
+
   // Fallback to mock data
   try {
     let filteredBookings = [...mockBookings];
-    
+
     // Apply filters if provided
     if (filters.status) {
       filteredBookings = filteredBookings.filter(b => b.status === filters.status);
     }
-    
+
     if (filters.building) {
       filteredBookings = filteredBookings.filter(b => b.building_short_name === filters.building);
     }
-    
+
     if (filters.dateFrom) {
       filteredBookings = filteredBookings.filter(b => b.booking_date >= filters.dateFrom);
     }
-    
+
     if (filters.dateTo) {
       filteredBookings = filteredBookings.filter(b => b.booking_date <= filters.dateTo);
     }
-    
+
     if (filters.userEmail) {
-      filteredBookings = filteredBookings.filter(b => 
+      filteredBookings = filteredBookings.filter(b =>
         b.user_email.toLowerCase().includes(filters.userEmail.toLowerCase())
       );
     }
-    
+
     // Apply pagination
     const total = filteredBookings.length;
     const start = (page - 1) * limit;
     const end = start + limit;
     const paginatedBookings = filteredBookings.slice(start, end);
-    
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     console.warn('Using mock booking data - Database connection in progress');
     return {
       success: true,
@@ -159,7 +159,7 @@ export const getBookingStats = async () => {
   try {
     // Try to get stats from Supabase first
     const result = await supabaseService.getBookingStats();
-    
+
     if (result.success) {
       return result;
     } else {
@@ -168,36 +168,36 @@ export const getBookingStats = async () => {
   } catch (error) {
     console.warn('Supabase service unavailable, using mock data:', error.message);
   }
-  
+
   // Fallback to mock data
   try {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
+
     const totalBookings = mockBookings.length;
     const recentBookings = mockBookings.filter(booking => {
       const bookingDate = new Date(booking.created_at);
       return bookingDate >= sevenDaysAgo;
     }).length;
-    
+
     const monthlyBookings = mockBookings.filter(booking => {
       const bookingDate = new Date(booking.created_at);
       return bookingDate >= thirtyDaysAgo;
     }).length;
-    
+
     // Status breakdown
     const statusBreakdown = mockBookings.reduce((acc, booking) => {
       acc[booking.status] = (acc[booking.status] || 0) + 1;
       return acc;
     }, {});
-    
-    const activeBookings = mockBookings.filter(booking => 
+
+    const activeBookings = mockBookings.filter(booking =>
       ['confirmed', 'active', 'pending'].includes(booking.status)
     ).length;
-    
+
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     return {
       success: true,
       data: {
@@ -231,7 +231,7 @@ export const updateBookingStatus = async (bookingId, status, reason = null) => {
   try {
     // Try to update in Supabase first
     const result = await supabaseService.updateBookingStatus(bookingId, status, reason);
-    
+
     if (result.success) {
       return result;
     } else {
@@ -240,12 +240,12 @@ export const updateBookingStatus = async (bookingId, status, reason = null) => {
   } catch (error) {
     console.warn('Supabase service unavailable, using mock response:', error.message);
   }
-  
+
   // Fallback to mock response
   try {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     // Find and update mock booking
     const bookingIndex = mockBookings.findIndex(b => b.id === bookingId);
     if (bookingIndex === -1) {
@@ -255,18 +255,18 @@ export const updateBookingStatus = async (bookingId, status, reason = null) => {
         error: 'Booking not found'
       };
     }
-    
+
     // Update mock data
     mockBookings[bookingIndex] = {
       ...mockBookings[bookingIndex],
       status: status,
       updated_at: new Date().toISOString(),
-      ...(status === 'cancelled' && reason && { 
+      ...(status === 'cancelled' && reason && {
         cancellation_reason: reason,
         cancelled_at: new Date().toISOString()
       })
     };
-    
+
     return {
       success: true,
       data: mockBookings[bookingIndex],
@@ -291,7 +291,7 @@ export const getBookingsByUser = async (userEmail) => {
   try {
     // Use apiService to get bookings filtered by user email
     const result = await apiService.getBookings({ user_email: userEmail });
-    
+
     if (result.bookings) {
       return {
         success: true,
@@ -302,15 +302,15 @@ export const getBookingsByUser = async (userEmail) => {
   } catch (error) {
     console.warn('Backend API unavailable, using mock data:', error.message);
   }
-  
+
   // Fallback to mock data
   try {
-    const userBookings = mockBookings.filter(booking => 
+    const userBookings = mockBookings.filter(booking =>
       booking.user_email.toLowerCase() === userEmail.toLowerCase()
     );
-    
+
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     return {
       success: true,
       data: userBookings,
@@ -335,7 +335,7 @@ export const getBookingById = async (bookingId) => {
   try {
     // Try to find in mock data first
     const booking = mockBookings.find(b => b.id === bookingId);
-    
+
     if (booking) {
       await new Promise(resolve => setTimeout(resolve, 100));
       return {
@@ -344,7 +344,7 @@ export const getBookingById = async (bookingId) => {
         error: null
       };
     }
-    
+
     return {
       success: false,
       data: null,
@@ -369,7 +369,7 @@ export const createBooking = async (bookingData) => {
   try {
     // Use apiService to create booking
     const data = await apiService.createBooking(bookingData);
-    
+
     if (data) {
       return {
         success: true,
@@ -394,11 +394,71 @@ export const createBooking = async (bookingData) => {
   }
 };
 
+/**
+ * Update booking (admin function - can update all fields except email)
+ * @param {string} bookingId - ID of the booking to update
+ * @param {Object} updateData - Data to update
+ * @returns {Promise<{success: boolean, data: Object, error: string|null}>}
+ */
+export const updateBooking = async (bookingId, updateData) => {
+  try {
+    // Try to update in Supabase first
+    const result = await supabaseService.updateBooking(bookingId, updateData);
+
+    if (result.success) {
+      return result;
+    } else {
+      console.warn('Supabase update failed, using mock response:', result.error);
+    }
+  } catch (error) {
+    console.warn('Supabase service unavailable, using mock response:', error.message);
+  }
+
+  // Fallback to mock response
+  try {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Find and update mock booking
+    const bookingIndex = mockBookings.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) {
+      return {
+        success: false,
+        data: null,
+        error: 'Booking not found'
+      };
+    }
+
+    // Update mock data (preserve email and created_at)
+    mockBookings[bookingIndex] = {
+      ...mockBookings[bookingIndex],
+      ...updateData,
+      user_email: mockBookings[bookingIndex].user_email, // Don't allow email changes
+      created_at: mockBookings[bookingIndex].created_at, // Don't allow created_at changes
+      updated_at: new Date().toISOString()
+    };
+
+    return {
+      success: true,
+      data: mockBookings[bookingIndex],
+      error: null
+    };
+  } catch (error) {
+    console.error('Error in updateBooking:', error);
+    return {
+      success: false,
+      data: null,
+      error: error.message
+    };
+  }
+};
+
 // Export default service object
 const bookingService = {
   getBookings,
   getBookingStats,
   updateBookingStatus,
+  updateBooking,
   getBookingsByUser,
   getBookingById,
   createBooking

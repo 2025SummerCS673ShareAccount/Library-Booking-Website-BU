@@ -116,7 +116,6 @@ const DashboardPage = () => {
 
   // Manual refresh function
   const handleRefresh = async () => {
-    console.log('🔄 Manual refresh triggered from Dashboard');
     await globalApi.refreshApi();
 
     // After global refresh, reload local data
@@ -262,9 +261,9 @@ const DashboardPage = () => {
           {/* Dynamic System Status Alert */}
           <Alert
             message={`System Status: ${globalApi.apiStatus === 'connected' ? 'System Online' :
-                globalApi.apiStatus === 'connecting' ? 'Initializing...' :
-                  globalApi.apiStatus === 'error' ? 'Service Issues' :
-                    'System Offline'
+              globalApi.apiStatus === 'connecting' ? 'Initializing...' :
+                globalApi.apiStatus === 'error' ? 'Service Issues' :
+                  'System Offline'
               }`}
             description={
               globalApi.apiStatus === 'connected'

@@ -57,7 +57,6 @@ export const GlobalApiProvider = ({ children }) => {
 
       if (result.success) {
         // Update connection status - SUCCESS
-        console.log('✅ [GLOBAL API] Connection successful, updating status to connected');
         setApiStatus('connected');
         setConnectionDetails({
           backend: 'healthy',
@@ -75,18 +74,24 @@ export const GlobalApiProvider = ({ children }) => {
           try {
             const roomsResult = await apiService.getAllRooms();
 
-            if (roomsResult.success && roomsResult.data?.rooms) {
-              allRooms = roomsResult.data.rooms.map(room => ({
-                // Keep the original room data
-                ...room,
-                // Add building information for consistent structure
-                building_code: room.buildings?.short_name || 'unknown',
-                building_name: room.buildings?.name || 'Unknown Building',
-                // Keep existing building_id
-                building_id: room.building_id
-              }));
+            if (roomsResult.success && roomsResult.data) {
+              // Handle both formats: roomsResult.data (new) and roomsResult.data.rooms (legacy)
+              const roomsData = Array.isArray(roomsResult.data) ? roomsResult.data : roomsResult.data.rooms;
+
+              if (roomsData && Array.isArray(roomsData)) {
+                allRooms = roomsData.map(room => ({
+                  // Keep the original room data
+                  ...room,
+                  // Add building information for consistent structure
+                  building_code: room.buildings?.short_name || room.building_code || 'unknown',
+                  building_name: room.buildings?.name || room.building_name || 'Unknown Building',
+                  // Keep existing building_id
+                  building_id: room.building_id
+                }));
+              }
             }
           } catch (error) {
+            console.error('Error fetching rooms:', error);
             // Silently handle rooms fetch error
           }
         }
@@ -105,7 +110,6 @@ export const GlobalApiProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ [GLOBAL API] Initialization failed:', error);
-      console.log('⚠️ [GLOBAL API] Updating status to error');
 
       // Update connection status - ERROR
       setApiStatus('error');
@@ -120,6 +124,7 @@ export const GlobalApiProvider = ({ children }) => {
       setGlobalData({
         dashboard: null,
         buildings: [],
+        rooms: [], // 确保rooms字段也被设置
         lastUpdated: new Date().toISOString()
       });
     } finally {

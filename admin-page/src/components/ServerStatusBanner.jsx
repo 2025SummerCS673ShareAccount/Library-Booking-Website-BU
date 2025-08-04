@@ -45,16 +45,6 @@ const ServerStatusBanner = ({
   });
   const isConnecting = useGlobalApiStatus ? globalApi.isConnecting : (localIsConnecting || false);
 
-  // Debug logging
-  if (useGlobalApiStatus) {
-    console.log('🔍 [ServerStatusBanner] Using GlobalAPI status:', {
-      apiStatus: globalApi.apiStatus,
-      connectionDetails: globalApi.connectionDetails,
-      isConnecting: globalApi.isConnecting,
-      hasValidData: globalApi.hasValidData
-    });
-  }
-
   // Handle refresh click
   const handleRefresh = async () => {
     if (useGlobalApiStatus) {

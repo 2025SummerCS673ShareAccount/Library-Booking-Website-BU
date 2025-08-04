@@ -23,7 +23,8 @@ import {
   Badge,
   Divider,
   Popconfirm,
-  Tooltip
+  Tooltip,
+  message
 } from 'antd';
 import {
   PlusOutlined,
@@ -51,6 +52,7 @@ import {
   PageLoadingSkeleton
 } from '../components/SkeletonComponents';
 import ServerStatusBanner from '../components/ServerStatusBanner';
+import supabaseService from '../services/supabaseService';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
@@ -93,21 +95,25 @@ const RoomsManagementPage = () => {
   const [scheduleForm] = Form.useForm();
   const [maintenanceForm] = Form.useForm();
 
-  // Get building options from GlobalAPI or use defaults
+  // Get building options from Supabase or use defaults
   const getBuildingOptions = () => {
-    const apiBuildings = globalApi.getCachedData('buildings');
-    if (apiBuildings && apiBuildings.length > 0) {
-      return apiBuildings.map(building => ({
-        code: building.short_name,
-        name: building.name
+    // Try to get buildings from GlobalAPI first
+    const globalBuildings = globalApi.getCachedData('buildings');
+    
+    if (globalBuildings && globalBuildings.length > 0) {
+      return globalBuildings.map(building => ({
+        id: building.id,
+        code: building.short_name || building.ShortName,
+        name: building.name || building.Name
       }));
     }
-    // Fallback to hardcoded options
+    
+    // Fallback to hardcoded options with estimated IDs
     return [
-      { code: 'mug', name: 'Mugar Memorial Library' },
-      { code: 'par', name: 'Pardee Library' },
-      { code: 'pic', name: 'Pickering Educational Resources Library' },
-      { code: 'sci', name: 'Science & Engineering Library' }
+      { id: 1, code: 'mug', name: 'Mugar Memorial Library' },
+      { id: 2, code: 'par', name: 'Pardee Library' },
+      { id: 3, code: 'pic', name: 'Pickering Educational Resources Library' },
+      { id: 4, code: 'sci', name: 'Science & Engineering Library' }
     ];
   };
 
@@ -241,25 +247,23 @@ const RoomsManagementPage = () => {
     }
   ];
 
-  // Load rooms data from GlobalAPI
+  // Load rooms data directly from Supabase
   const loadRooms = async () => {
     try {
       setLoading(true);
       setDataError(null);
 
-      // Get rooms from GlobalAPI cache
-      const apiRooms = globalApi.getCachedData('rooms');
+      // Get rooms from GlobalAPI cache first
+      const globalRooms = globalApi.getCachedData('rooms');
 
-      if (apiRooms && apiRooms.length > 0) {
-        // Transform API room data to our room management format
-        // Room data structure from bub-backend:
-        // { id, name, building_id, capacity, available, room_type, eid, gtype, url, created_at, updated_at }
-        const transformedRooms = apiRooms.map(room => {
+      if (globalRooms && globalRooms.length > 0) {
+        // Transform GlobalAPI room data to our room management format
+        const transformedRooms = globalRooms.map(room => {
           return {
             id: room.id,
             name: room.name,
-            building_code: room.building_code,
-            building_name: room.building_name,
+            building_code: room.building_code || 'unknown',
+            building_name: room.building_name || 'Unknown Building',
             building_id: room.building_id,
             floor: extractFloorFromName(room.name), // Extract from room name like "Mugar 403A"
             room_number: extractRoomNumberFromName(room.name),
@@ -283,28 +287,63 @@ const RoomsManagementPage = () => {
 
         setRooms(transformedRooms);
         setFilteredRooms(transformedRooms);
-
       } else {
-        // No fallback - show error if no data
-        console.log('❌ No room data from API');
-        setDataError('No room data received from backend');
-        setRooms([]);
-        setFilteredRooms([]);
+        // No global room data available, try to refresh
+        await globalApi.refreshApi();
+        const refreshedRooms = globalApi.getCachedData('rooms');
+
+        if (refreshedRooms && refreshedRooms.length > 0) {
+          const transformedRooms = refreshedRooms.map(room => {
+            return {
+              id: room.id,
+              name: room.name,
+              building_code: room.building_code || 'unknown',
+              building_name: room.building_name || 'Unknown Building',
+              building_id: room.building_id,
+              floor: extractFloorFromName(room.name),
+              room_number: extractRoomNumberFromName(room.name),
+              type: mapRoomType(room.room_type),
+              capacity: room.capacity,
+              status: room.available ? 'active' : 'inactive',
+              features: getDefaultFeatures(room.room_type),
+              open_time: '08:00',
+              close_time: '22:00',
+              is_24_hours: false,
+              maintenance_schedule: [],
+              created_at: room.created_at,
+              updated_at: room.updated_at,
+              eid: room.eid,
+              gtype: room.gtype,
+              url: room.url,
+              _original: room
+            };
+          });
+
+          setRooms(transformedRooms);
+          setFilteredRooms(transformedRooms);
+        } else {
+          // If still no data available, use mock data for development
+          setRooms(mockRooms);
+          setFilteredRooms(mockRooms);
+          setDataError('No room data available from API');
+        }
       }
 
     } catch (error) {
       console.error('Failed to load rooms:', error);
       setDataError(error.message);
-      setRooms([]);
-      setFilteredRooms([]);
+
+      // Use mock data as fallback even on error
+      setRooms(mockRooms);
+      setFilteredRooms(mockRooms);
     } finally {
       setLoading(false);
     }
   };
 
-  // Manual refresh function for ServerStatusBanner
+  // Manual refresh function for direct Supabase data loading
   const handleRefresh = async () => {
-    console.log('🔄 Rooms Management: Manual refresh triggered');
+    // Refresh GlobalAPI data and reload rooms
     await globalApi.refreshApi();
     await loadRooms();
   };
@@ -352,66 +391,111 @@ const RoomsManagementPage = () => {
   // Room management functions
   const handleAddRoom = async (values) => {
     try {
-      const newRoom = {
-        id: `room_${Date.now()}`,
+      // Generate a unique eid (LibCal Equipment ID) for the new room
+      // Use timestamp + random number to ensure uniqueness
+      const uniqueEid = parseInt(`${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000)}`);
+      
+      // Find the selected building
+      const selectedBuilding = BUILDING_OPTIONS.find(b => b.code === values.building_code);
+      if (!selectedBuilding) {
+        message.error('Invalid building selection');
+        return;
+      }
+      
+      // Prepare room data for Supabase
+      const roomData = {
         name: values.name,
-        building_code: values.building_code,
-        building_name: BUILDING_OPTIONS.find(b => b.code === values.building_code)?.name || '',
-        floor: values.floor,
-        room_number: values.room_number,
-        type: values.type,
+        building_id: selectedBuilding.id,
         capacity: values.capacity,
-        status: 'active',
-        features: values.features || [],
-        open_time: values.open_time?.format('HH:mm') || '08:00',
-        close_time: values.close_time?.format('HH:mm') || '22:00',
-        is_24_hours: values.is_24_hours || false,
-        maintenance_schedule: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        room_type: values.type,
+        available: values.status !== 'inactive',
+        eid: uniqueEid, // Required unique identifier for LibCal integration
       };
 
-      const updatedRooms = [...rooms, newRoom];
-      setRooms(updatedRooms);
-      setFilteredRooms(updatedRooms);
-      setAddRoomModalVisible(false);
-      addRoomForm.resetFields();
+      console.log('Creating room with data:', roomData);
+
+      // Create room in Supabase
+      const result = await supabaseService.createRoom(roomData);
+
+      if (result.success) {
+        // Refresh global data and reload rooms
+        await globalApi.refreshApi();
+        await loadRooms();
+
+        setAddRoomModalVisible(false);
+        addRoomForm.resetFields();
+
+        message.success('Room added successfully');
+      } else {
+        message.error(`Failed to add room: ${result.error}`);
+      }
     } catch (error) {
       console.error('Failed to add room:', error);
+      message.error(`Error adding room: ${error.message}`);
     }
   };
 
   const handleEditRoom = async (values) => {
     try {
-      const updatedRooms = rooms.map(room =>
-        room.id === selectedRoom.id
-          ? {
-            ...room,
-            ...values,
-            building_name: BUILDING_OPTIONS.find(b => b.code === values.building_code)?.name || room.building_name,
-            open_time: values.open_time?.format('HH:mm') || room.open_time,
-            close_time: values.close_time?.format('HH:mm') || room.close_time,
-            updated_at: new Date().toISOString()
-          }
-          : room
-      );
+      if (!selectedRoom || !selectedRoom._original) {
+        message.error('Invalid room data for editing');
+        return;
+      }
 
-      setRooms(updatedRooms);
-      setFilteredRooms(updatedRooms);
-      setEditRoomModalVisible(false);
-      setSelectedRoom(null);
+      // Find the selected building
+      const selectedBuilding = BUILDING_OPTIONS.find(b => b.code === values.building_code);
+      if (!selectedBuilding) {
+        message.error('Invalid building selection');
+        return;
+      }
+
+      // Prepare updated room data for Supabase
+      const roomData = {
+        name: values.name,
+        capacity: values.capacity,
+        room_type: values.type,
+        available: values.status !== 'inactive',
+        building_id: selectedBuilding.id,
+      };
+
+      // Update room in Supabase
+      const result = await supabaseService.updateRoom(selectedRoom.id, roomData);
+
+      if (result.success) {
+        // Refresh global data and reload rooms
+        await globalApi.refreshApi();
+        await loadRooms();
+
+        setEditRoomModalVisible(false);
+        setSelectedRoom(null);
+
+        message.success('Room updated successfully');
+      } else {
+        message.error(`Failed to update room: ${result.error}`);
+      }
     } catch (error) {
       console.error('Failed to update room:', error);
+      message.error(`Error updating room: ${error.message}`);
     }
   };
 
   const handleDeleteRoom = async (roomId) => {
     try {
-      const updatedRooms = rooms.filter(room => room.id !== roomId);
-      setRooms(updatedRooms);
-      setFilteredRooms(updatedRooms);
+      // Delete room from Supabase (soft delete - set available to false)
+      const result = await supabaseService.updateRoom(roomId, { available: false });
+
+      if (result.success) {
+        // Refresh global data and reload rooms
+        await globalApi.refreshApi();
+        await loadRooms();
+
+        message.success('Room deleted successfully');
+      } else {
+        message.error(`Failed to delete room: ${result.error}`);
+      }
     } catch (error) {
       console.error('Failed to delete room:', error);
+      message.error(`Error deleting room: ${error.message}`);
     }
   };
 
@@ -615,8 +699,15 @@ const RoomsManagementPage = () => {
 
   // Effect hooks
   useEffect(() => {
+    // Update building options when component mounts or global data changes
+    setBuildings(getBuildingOptions());
     loadRooms();
   }, []);
+
+  // Listen for GlobalAPI data updates
+  useEffect(() => {
+    loadRooms();
+  }, [globalApi.globalData.lastUpdated]);
 
   useEffect(() => {
     filterRooms();
@@ -630,13 +721,13 @@ const RoomsManagementPage = () => {
         Add, edit, and configure room availability and operating hours.
       </Paragraph>
 
-      {/* Server Status Banner */}
+      {/* Server Status Banner - GlobalAPI Connection */}
       <ServerStatusBanner
         useGlobalApi={true}
         onRefresh={handleRefresh}
         showConnectionStatus={true}
-        showApiStatusCard={true}
-        showConnectingAlert={true}
+        showApiStatusCard={false}
+        showConnectingAlert={false}
         showRefreshButton={true}
         style={{ marginBottom: 24 }}
       />

@@ -696,6 +696,57 @@ class SupabaseService {
   }
 
   /**
+   * Create a new room
+   */
+  async createRoom(roomData) {
+    try {
+      const { data, error } = await this.client
+        .from('rooms')
+        .insert([roomData])
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error creating room:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Update an existing room
+   */
+  async updateRoom(roomId, roomData) {
+    try {
+      const { data, error } = await this.client
+        .from('rooms')
+        .update(roomData)
+        .eq('id', roomId)
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error updating room:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Get system monitoring data
    */
   async getSystemStats() {
@@ -779,6 +830,61 @@ class SupabaseService {
       };
     } catch (error) {
       console.error('Error updating booking status:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Update booking (admin function - can update all fields except email)
+   */
+  async updateBooking(bookingId, updateData) {
+    try {
+      // Prepare update data, excluding fields that shouldn't be updated
+      const allowedFields = [
+        'user_name', 'booking_date', 'start_time', 'end_time',
+        'duration_minutes', 'group_size', 'status', 'purpose',
+        'notes', 'room_id', 'building_id'
+      ];
+
+      const filteredUpdateData = {};
+      allowedFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          filteredUpdateData[field] = updateData[field];
+        }
+      });
+
+      // Always update the timestamp
+      filteredUpdateData.updated_at = new Date().toISOString();
+
+      const { data, error } = await this.client
+        .from('bookings')
+        .update(filteredUpdateData)
+        .eq('id', bookingId)
+        .select(`
+          *, 
+          buildings(name, short_name),
+          rooms(name)
+        `);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Transform the response to match expected format
+      const booking = data[0];
+      const transformedData = {
+        ...booking,
+        building_name: booking.buildings?.name,
+        building_short_name: booking.buildings?.short_name,
+        room_name: booking.rooms?.name
+      };
+
+      return {
+        success: true,
+        data: transformedData
+      };
+    } catch (error) {
+      console.error('Error updating booking:', error);
       return { success: false, error: error.message };
     }
   }
